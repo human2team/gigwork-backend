@@ -1,0 +1,87 @@
+HELP.md
+.gradle
+build/
+!gradle/wrapper/gradle-wrapper.jar
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+### STS ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+bin/
+!**/src/main/**/bin/
+!**/src/test/**/bin/
+
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.iml
+*.ipr
+out/
+!**/src/main/**/out/
+!**/src/test/**/out/
+
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+
+### VS Code ###
+.vscode/
+
+### Sensitive & Environment ###
+# Application properties with sensitive data
+**/application-dev.properties
+**/application-prod.properties
+**/application-local.properties
+# Environment variables
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+
+### Database ###
+# H2 database files
+*.db
+*.trace.db
+*.lock.db
+
+### Logs ###
+/logs/
+*.log
+*.log.*
+log/
+spring.log
+
+### OS Files ###
+# Windows
+Thumbs.db
+Desktop.ini
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+# Linux
+*~
+
+### Temporary Files ###
+*.tmp
+*.temp
+*.swp
+*.swo
+
+### Test Coverage ###
+/coverage/
+.nyc_output/
+
+### Gradle Additional ###
+gradle-app.setting
+.gradletasknamecache
