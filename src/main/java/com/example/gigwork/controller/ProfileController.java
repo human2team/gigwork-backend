@@ -17,7 +17,6 @@ import com.example.gigwork.service.ProfileService;
 
 @RestController
 @RequestMapping("/api/jobseeker/profile")
-@CrossOrigin(origins = "http://localhost:5173", allowCredentials = "true")
 public class ProfileController {
     
     @Autowired

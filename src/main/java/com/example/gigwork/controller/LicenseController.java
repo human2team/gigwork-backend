@@ -21,7 +21,6 @@ import com.example.gigwork.service.LicenseService;
 
 @RestController
 @RequestMapping("/api/jobseeker/licenses")
-@CrossOrigin(origins = "http://localhost:5173", allowCredentials = "true")
 public class LicenseController {
     
     @Autowired

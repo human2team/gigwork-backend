@@ -21,7 +21,6 @@ import com.example.gigwork.service.ExperienceService;
 
 @RestController
 @RequestMapping("/api/jobseeker/experiences")
-@CrossOrigin(origins = "http://localhost:5173", allowCredentials = "true")
 public class ExperienceController {
     
     @Autowired

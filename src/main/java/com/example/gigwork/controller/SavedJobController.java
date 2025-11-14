@@ -20,7 +20,6 @@ import com.example.gigwork.service.SavedJobService;
 
 @RestController
 @RequestMapping("/api/jobseeker/saved-jobs")
-@CrossOrigin(origins = "http://localhost:5173", allowCredentials = "true")
 public class SavedJobController {
 
     @Autowired
