@@ -1,14 +1,15 @@
 package com.example.gigwork.service;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.example.gigwork.dto.JobseekerProfileRequest;
 import com.example.gigwork.dto.JobseekerProfileResponse;
 import com.example.gigwork.entity.JobseekerProfile;
 import com.example.gigwork.entity.User;
 import com.example.gigwork.repository.JobseekerProfileRepository;
 import com.example.gigwork.repository.UserRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class ProfileService {
@@ -32,7 +33,7 @@ public class ProfileService {
                 .orElseGet(() -> {
                     JobseekerProfile newProfile = new JobseekerProfile();
                     newProfile.setUser(user);
-                    newProfile.setName(""); // 기본값
+                    newProfile.setName("사용자"); // 기본값
                     return jobseekerProfileRepository.save(newProfile);
                 });
         

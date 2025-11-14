@@ -25,7 +25,7 @@ public class EmployerProfileController {
      * GET /api/employer/profile/{userId}
      */
     @GetMapping("/{userId}")
-    public ResponseEntity<?> getProfile(@PathVariable Long userId) {
+    public ResponseEntity<?> getProfile(@PathVariable("userId") Long userId) {
         try {
             EmployerProfile profile = employerProfileRepository.findByUserId(userId)
                     .orElseThrow(() -> new RuntimeException("프로필을 찾을 수 없습니다."));

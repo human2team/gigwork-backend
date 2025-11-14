@@ -1,15 +1,22 @@
 package com.example.gigwork.controller;
 
-import com.example.gigwork.dto.JobResponse;
-import com.example.gigwork.service.SavedJobService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.example.gigwork.dto.JobResponse;
+import com.example.gigwork.service.SavedJobService;
 
 @RestController
 @RequestMapping("/api/jobseeker/saved-jobs")
@@ -24,7 +31,7 @@ public class SavedJobController {
      * GET /api/jobseeker/saved-jobs/{userId}
      */
     @GetMapping("/{userId}")
-    public ResponseEntity<?> getSavedJobs(@PathVariable Long userId) {
+    public ResponseEntity<?> getSavedJobs(@PathVariable("userId") Long userId) {
         try {
             List<JobResponse> jobs = savedJobService.getSavedJobs(userId);
             return ResponseEntity.ok(jobs);
@@ -39,7 +46,7 @@ public class SavedJobController {
      * POST /api/jobseeker/saved-jobs/{userId}/{jobId}
      */
     @PostMapping("/{userId}/{jobId}")
-    public ResponseEntity<?> saveJob(@PathVariable Long userId, @PathVariable Long jobId) {
+    public ResponseEntity<?> saveJob(@PathVariable("userId") Long userId, @PathVariable("jobId") Long jobId) {
         try {
             savedJobService.saveJob(userId, jobId);
             Map<String, String> response = new HashMap<>();
@@ -56,7 +63,7 @@ public class SavedJobController {
      * DELETE /api/jobseeker/saved-jobs/{userId}/{jobId}
      */
     @DeleteMapping("/{userId}/{jobId}")
-    public ResponseEntity<?> unsaveJob(@PathVariable Long userId, @PathVariable Long jobId) {
+    public ResponseEntity<?> unsaveJob(@PathVariable("userId") Long userId, @PathVariable("jobId") Long jobId) {
         try {
             savedJobService.unsaveJob(userId, jobId);
             Map<String, String> response = new HashMap<>();
@@ -73,7 +80,7 @@ public class SavedJobController {
      * GET /api/jobseeker/saved-jobs/{userId}/check/{jobId}
      */
     @GetMapping("/{userId}/check/{jobId}")
-    public ResponseEntity<?> isJobSaved(@PathVariable Long userId, @PathVariable Long jobId) {
+    public ResponseEntity<?> isJobSaved(@PathVariable("userId") Long userId, @PathVariable("jobId") Long jobId) {
         try {
             boolean saved = savedJobService.isJobSaved(userId, jobId);
             Map<String, Boolean> response = new HashMap<>();

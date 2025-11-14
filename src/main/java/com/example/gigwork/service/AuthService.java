@@ -1,5 +1,12 @@
 package com.example.gigwork.service;
 
+import java.time.LocalDate;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.example.gigwork.dto.AuthResponse;
 import com.example.gigwork.dto.EmployerSignupRequest;
 import com.example.gigwork.dto.JobseekerSignupRequest;
@@ -11,12 +18,6 @@ import com.example.gigwork.enums.UserType;
 import com.example.gigwork.repository.EmployerProfileRepository;
 import com.example.gigwork.repository.JobseekerProfileRepository;
 import com.example.gigwork.repository.UserRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.time.LocalDate;
 
 @Service
 public class AuthService {
@@ -139,5 +140,48 @@ public class AuthService {
             user.getUserType().name(),
             "로그인에 성공했습니다."
         );
+    }
+    
+    /**
+     * 비밀번호 변경
+     */
+    @Transactional
+    public void changePassword(Long userId, String currentPassword, String newPassword) {
+        // 1. 사용자 찾기
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
+        
+        // 2. 현재 비밀번호 확인
+        if (!passwordEncoder.matches(currentPassword, user.getPassword())) {
+            throw new RuntimeException("현재 비밀번호가 일치하지 않습니다.");
+        }
+        
+        // 3. 새 비밀번호 유효성 검사
+        if (newPassword == null || newPassword.length() < 6) {
+            throw new RuntimeException("새 비밀번호는 최소 6자 이상이어야 합니다.");
+        }
+        
+        // 4. 비밀번호 변경
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+    }
+    
+    /**
+     * 계정 탈퇴
+     * User 삭제 시 CASCADE 설정으로 인해 Profile, License, Experience 등도 자동 삭제됨
+     */
+    @Transactional
+    public void deleteAccount(Long userId, String password) {
+        // 1. 사용자 찾기
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
+        
+        // 2. 비밀번호 확인 (본인 인증)
+        if (!passwordEncoder.matches(password, user.getPassword())) {
+            throw new RuntimeException("비밀번호가 일치하지 않습니다.");
+        }
+        
+        // 3. 사용자 삭제 (CASCADE로 프로필, 자격증, 경력, 공고 등 모두 삭제됨)
+        userRepository.delete(user);
     }
 }

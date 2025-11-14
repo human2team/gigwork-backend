@@ -34,7 +34,7 @@ public class ApplicationController {
      * GET /api/jobseeker/applications/{userId}
      */
     @GetMapping("/{userId}")
-    public ResponseEntity<?> getApplications(@PathVariable Long userId) {
+    public ResponseEntity<?> getApplications(@PathVariable("userId") Long userId) {
         try {
             List<ApplicationResponse> applications = applicationService.getApplications(userId);
             return ResponseEntity.ok(applications);
@@ -49,7 +49,7 @@ public class ApplicationController {
      * POST /api/jobseeker/applications/{userId}
      */
     @PostMapping("/{userId}")
-    public ResponseEntity<?> applyJob(@PathVariable Long userId, @RequestBody ApplicationRequest request) {
+    public ResponseEntity<?> applyJob(@PathVariable("userId") Long userId, @RequestBody ApplicationRequest request) {
         try {
             ApplicationResponse response = applicationService.applyJob(userId, request);
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
@@ -64,7 +64,7 @@ public class ApplicationController {
      * DELETE /api/jobseeker/applications/{userId}/{applicationId}
      */
     @DeleteMapping("/{userId}/{applicationId}")
-    public ResponseEntity<?> cancelApplication(@PathVariable Long userId, @PathVariable Long applicationId) {
+    public ResponseEntity<?> cancelApplication(@PathVariable("userId") Long userId, @PathVariable("applicationId") Long applicationId) {
         try {
             applicationService.cancelApplication(userId, applicationId);
             Map<String, String> response = new HashMap<>();
@@ -81,7 +81,7 @@ public class ApplicationController {
      * GET /api/jobseeker/applications/{userId}/check/{jobId}
      */
     @GetMapping("/{userId}/check/{jobId}")
-    public ResponseEntity<?> isJobApplied(@PathVariable Long userId, @PathVariable Long jobId) {
+    public ResponseEntity<?> isJobApplied(@PathVariable("userId") Long userId, @PathVariable("jobId") Long jobId) {
         try {
             boolean applied = applicationService.isJobApplied(userId, jobId);
             Map<String, Boolean> response = new HashMap<>();
@@ -98,7 +98,7 @@ public class ApplicationController {
      * GET /api/jobseeker/applications/job/{jobId}
      */
     @GetMapping("/job/{jobId}")
-    public ResponseEntity<?> getApplicantsByJob(@PathVariable Long jobId) {
+    public ResponseEntity<?> getApplicantsByJob(@PathVariable("jobId") Long jobId) {
         try {
             List<?> applicants = applicationService.getApplicantsByJob(jobId);
             return ResponseEntity.ok(applicants);
@@ -114,7 +114,7 @@ public class ApplicationController {
      */
     @PutMapping("/{applicationId}/status")
     public ResponseEntity<?> updateApplicationStatus(
-            @PathVariable Long applicationId,
+            @PathVariable("applicationId") Long applicationId,
             @RequestBody Map<String, String> statusUpdate) {
         try {
             String status = statusUpdate.get("status");

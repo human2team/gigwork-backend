@@ -66,6 +66,98 @@ public class AuthController {
     }
     
     /**
+     * 비밀번호 변경 API
+     * PUT /api/auth/change-password/{userId}
+     */
+    @PutMapping("/change-password/{userId}")
+    public ResponseEntity<?> changePassword(
+            @PathVariable("userId") Long userId,
+            @RequestBody ChangePasswordRequest request) {
+        try {
+            authService.changePassword(userId, request.getCurrentPassword(), request.getNewPassword());
+            return ResponseEntity.ok(new SuccessResponse("비밀번호가 성공적으로 변경되었습니다."));
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(new ErrorResponse(e.getMessage()));
+        }
+    }
+    
+    /**
+     * 계정 탈퇴 API
+     * DELETE /api/auth/account/{userId}
+     */
+    @DeleteMapping("/account/{userId}")
+    public ResponseEntity<?> deleteAccount(
+            @PathVariable("userId") Long userId,
+            @RequestBody DeleteAccountRequest request) {
+        try {
+            authService.deleteAccount(userId, request.getPassword());
+            return ResponseEntity.ok(new SuccessResponse("계정이 성공적으로 탈퇴되었습니다."));
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(new ErrorResponse(e.getMessage()));
+        }
+    }
+    
+    /**
+     * 비밀번호 변경 요청 DTO
+     */
+    static class ChangePasswordRequest {
+        private String currentPassword;
+        private String newPassword;
+        
+        public String getCurrentPassword() {
+            return currentPassword;
+        }
+        
+        public void setCurrentPassword(String currentPassword) {
+            this.currentPassword = currentPassword;
+        }
+        
+        public String getNewPassword() {
+            return newPassword;
+        }
+        
+        public void setNewPassword(String newPassword) {
+            this.newPassword = newPassword;
+        }
+    }
+    
+    /**
+     * 계정 탈퇴 요청 DTO
+     */
+    static class DeleteAccountRequest {
+        private String password;
+        
+        public String getPassword() {
+            return password;
+        }
+        
+        public void setPassword(String password) {
+            this.password = password;
+        }
+    }
+    
+    /**
+     * 성공 응답용 클래스
+     */
+    static class SuccessResponse {
+        private String message;
+        
+        public SuccessResponse(String message) {
+            this.message = message;
+        }
+        
+        public String getMessage() {
+            return message;
+        }
+        
+        public void setMessage(String message) {
+            this.message = message;
+        }
+    }
+    
+    /**
      * 에러 응답용 내부 클래스
      */
     static class ErrorResponse {

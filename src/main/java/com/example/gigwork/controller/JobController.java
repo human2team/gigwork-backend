@@ -49,7 +49,7 @@ public class JobController {
      * POST /api/employer/jobs/{employerId}
      */
     @PostMapping("/api/employer/jobs/{employerId}")
-    public ResponseEntity<?> createJob(@PathVariable Long employerId, @RequestBody JobCreateRequest request) {
+    public ResponseEntity<?> createJob(@PathVariable("employerId") Long employerId, @RequestBody JobCreateRequest request) {
         try {
             JobDetailResponse response = jobService.createJob(employerId, request);
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
@@ -64,7 +64,7 @@ public class JobController {
      * GET /api/employer/jobs/detail/{jobId}
      */
     @GetMapping("/api/employer/jobs/detail/{jobId}")
-    public ResponseEntity<?> getJob(@PathVariable Long jobId) {
+    public ResponseEntity<?> getJob(@PathVariable("jobId") Long jobId) {
         try {
             JobDetailResponse response = jobService.getJobWithoutIncrement(jobId);
             return ResponseEntity.ok(response);
@@ -79,7 +79,7 @@ public class JobController {
      * GET /api/jobs/detail/{jobId}
      */
     @GetMapping("/api/jobs/detail/{jobId}")
-    public ResponseEntity<?> getJobForJobseeker(@PathVariable Long jobId, HttpSession session) {
+    public ResponseEntity<?> getJobForJobseeker(@PathVariable("jobId") Long jobId, HttpSession session) {
         try {
             JobDetailResponse response = jobService.getJob(jobId, session);
             return ResponseEntity.ok(response);
@@ -94,7 +94,7 @@ public class JobController {
      * GET /api/employer/jobs/{employerId}
      */
     @GetMapping("/api/employer/jobs/{employerId}")
-    public ResponseEntity<?> getEmployerJobs(@PathVariable Long employerId) {
+    public ResponseEntity<?> getEmployerJobs(@PathVariable("employerId") Long employerId) {
         try {
             List<JobDetailResponse> jobs = jobService.getEmployerJobs(employerId);
             return ResponseEntity.ok(jobs);
@@ -109,7 +109,7 @@ public class JobController {
      * PUT /api/employer/jobs/{jobId}
      */
     @PutMapping("/api/employer/jobs/{jobId}")
-    public ResponseEntity<?> updateJob(@PathVariable Long jobId, @RequestBody JobCreateRequest request) {
+    public ResponseEntity<?> updateJob(@PathVariable("jobId") Long jobId, @RequestBody JobCreateRequest request) {
         try {
             JobDetailResponse response = jobService.updateJob(jobId, request);
             return ResponseEntity.ok(response);
@@ -124,7 +124,7 @@ public class JobController {
      * DELETE /api/employer/jobs/{jobId}
      */
     @DeleteMapping("/api/employer/jobs/{jobId}")
-    public ResponseEntity<?> deleteJob(@PathVariable Long jobId) {
+    public ResponseEntity<?> deleteJob(@PathVariable("jobId") Long jobId) {
         try {
             jobService.deleteJob(jobId);
             Map<String, String> response = new HashMap<>();
@@ -141,7 +141,7 @@ public class JobController {
      * PATCH /api/employer/jobs/{jobId}/status
      */
     @PutMapping("/api/employer/jobs/{jobId}/status")
-    public ResponseEntity<?> updateJobStatus(@PathVariable Long jobId, @RequestBody Map<String, String> statusRequest) {
+    public ResponseEntity<?> updateJobStatus(@PathVariable("jobId") Long jobId, @RequestBody Map<String, String> statusRequest) {
         try {
             String status = statusRequest.get("status");
             if (status == null || status.isEmpty()) {
