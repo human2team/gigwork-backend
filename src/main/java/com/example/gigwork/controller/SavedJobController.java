@@ -13,7 +13,6 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/jobseeker/saved-jobs")
-@CrossOrigin(origins = "http://localhost:5173", allowCredentials = "true")
 public class SavedJobController {
 
     @Autowired

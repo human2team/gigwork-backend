@@ -12,7 +12,6 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/jobseeker/experiences")
-@CrossOrigin(origins = "http://localhost:5173", allowCredentials = "true")
 public class ExperienceController {
     
     @Autowired
