@@ -4,13 +4,24 @@ import com.example.gigwork.dto.ChatRequest;
 import com.example.gigwork.dto.ChatResponse;
 import com.example.gigwork.dto.FastApiRequest;
 import com.example.gigwork.dto.FastApiResponse;
+import com.example.gigwork.dto.JobDetailResponse;
+import com.example.gigwork.entity.Job;
+import com.example.gigwork.enums.JobStatus;
+import com.example.gigwork.repository.JobRepository;
+import com.fasterxml.jackson.core.JsonProcessingException;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Slf4j
 @Service
@@ -18,6 +29,7 @@ import java.util.Map;
 public class ChatService {
 
     private final WebClient webClient;
+    private final ObjectMapper objectMapper;
 
     public ChatResponse processChat(ChatRequest request) {
         try {
@@ -33,20 +45,21 @@ public class ChatService {
 
             log.info("Sending request to FastAPI: {}", fastApiRequest);
 
-            // FastAPI로 POST 요청
-            // chat이 아닌 /chat/임을 유의
-            // fastapi에서 main.py에서 /chat으로 받고 다시 chat.py에서 /로 받고 있음 (향후 수정)
-            FastApiResponse fastApiResponse = webClient.post()
-                    .uri("/chat/")
-                    .bodyValue(fastApiRequest)
-                    .retrieve()
-                    .bodyToMono(FastApiResponse.class)
-                    .block();
-
-            log.info("Received response from FastAPI: {}", fastApiResponse);
-
-            // FastAPI 응답을 Spring 응답 형식으로 변환
-            return convertToResponse(fastApiResponse);
+            if (request.getSearch() != null && !request.getSearch()) {
+                FastApiResponse fastApiResponse = webClient.post()
+                        .uri("/chat/")
+                        .bodyValue(fastApiRequest)
+                        .retrieve()
+                        .bodyToMono(FastApiResponse.class)
+                        .block();
+                log.info("Received response from FastAPI: {}", fastApiResponse);
+                return convertToResponse(fastApiResponse);
+            } else { //search=true
+                log.info("1111111111111111111111");
+                //아래에서 jobs 리턴받는 것을 fastapi 통해 받아야 함
+                List<Job> jobs = jobRepository.findByStatus(JobStatus.ACTIVE);
+                return jobs.stream().map(this::convertToDetailResponse).toList();                
+            }
             
         } catch (Exception e) {
             log.error("Error calling FastAPI: ", e);
@@ -130,6 +143,55 @@ public class ChatService {
         response.setHourlyWage(15000);
         response.setRequirements("경력 무관");
         response.setCategory("서빙");
+        return response;
+    }
+
+    private JobDetailResponse convertToDetailResponse(Job job) {
+        JobDetailResponse response = new JobDetailResponse();
+        response.setId(job.getId());
+        response.setEmployerId(job.getEmployer().getId());
+        response.setTitle(job.getTitle());
+        response.setCategory(job.getCategory());
+        response.setCompany(job.getCompany());
+        response.setLocation(job.getLocation());
+        response.setDescription(job.getDescription());
+        response.setStatus(job.getStatus().name());
+        response.setPostedDate(job.getPostedDate());
+        response.setDeadline(job.getDeadline());
+        response.setSalary(job.getSalary());
+        response.setSalaryType(job.getSalaryType());
+        response.setStartTime(job.getStartTime());
+        response.setEndTime(job.getEndTime());
+        response.setOtherRequirement(job.getOtherRequirement());
+        response.setViews(job.getViews());
+        response.setApplicants(job.getApplications() != null ? job.getApplications().size() : 0);
+        response.setGender(job.getGender());
+        response.setAge(job.getAge());
+        response.setEducation(job.getEducation());
+        
+        // JSON을 List로 변환
+        try {
+            if (job.getQualifications() != null && !job.getQualifications().isEmpty()) {
+                response.setQualifications(Arrays.asList(objectMapper.readValue(job.getQualifications(), String[].class)));
+            } else {
+                response.setQualifications(Collections.emptyList());
+            }
+            
+            if (job.getRequirements() != null && !job.getRequirements().isEmpty()) {
+                response.setRequirements(Arrays.asList(objectMapper.readValue(job.getRequirements(), String[].class)));
+            } else {
+                response.setRequirements(Collections.emptyList());
+            }
+            
+            if (job.getWorkDays() != null && !job.getWorkDays().isEmpty()) {
+                response.setWorkingDays(Arrays.asList(objectMapper.readValue(job.getWorkDays(), String[].class)));
+            } else {
+                response.setWorkingDays(Collections.emptyList());
+            }
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("JSON 파싱 오류: " + e.getMessage());
+        }
+        
         return response;
     }
 }
