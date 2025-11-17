@@ -17,4 +17,7 @@ public class ChatResponse {
     private Integer hourlyWage;
     private String requirements;
     private String category;
+    
+    // 검색 결과 데이터 (id, title, content 등)
+    private Object result;
 }

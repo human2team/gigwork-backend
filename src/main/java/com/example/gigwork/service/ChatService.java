@@ -45,20 +45,18 @@ public class ChatService {
 
             log.info("Sending request to FastAPI: {}", fastApiRequest);
 
+            FastApiResponse fastApiResponse = webClient.post()
+                    .uri("/chat/")
+                    .bodyValue(fastApiRequest)
+                    .retrieve()
+                    .bodyToMono(FastApiResponse.class)
+                    .block();
+            log.info("Received response from FastAPI: {}", fastApiResponse);
             if (request.getSearch() != null && !request.getSearch()) {
-                FastApiResponse fastApiResponse = webClient.post()
-                        .uri("/chat/")
-                        .bodyValue(fastApiRequest)
-                        .retrieve()
-                        .bodyToMono(FastApiResponse.class)
-                        .block();
-                log.info("Received response from FastAPI: {}", fastApiResponse);
                 return convertToResponse(fastApiResponse);
             } else { //search=true
                 log.info("1111111111111111111111");
-                //아래에서 jobs 리턴받는 것을 fastapi 통해 받아야 함
-                List<Job> jobs = jobRepository.findByStatus(JobStatus.ACTIVE);
-                return jobs.stream().map(this::convertToDetailResponse).toList();                
+                return convertToResponseForSearch(fastApiResponse);
             }
             
         } catch (Exception e) {
@@ -115,6 +113,24 @@ public class ChatService {
         return response;
     }
 
+    private ChatResponse convertToResponseForSearch(FastApiResponse fastApiResponse) {
+        if (fastApiResponse == null || !Boolean.TRUE.equals(fastApiResponse.getSuccess())) {
+            return createSampleResponse();
+        }
+
+        // FastAPI의 result에서 검색 결과 데이터 추출 (id, title, content 등)
+        Object result = fastApiResponse.getResult();
+        
+        ChatResponse response = new ChatResponse();
+        
+        // result를 그대로 설정 (React로 전달)
+        response.setResult(result);
+        
+        log.info("Search result data: {}", result);
+        
+        return response;
+    }
+
     private String getStringValue(Map<String, Object> map, String key) {
         Object value = map.get(key);
         return value != null ? value.toString() : null;
@@ -146,52 +162,54 @@ public class ChatService {
         return response;
     }
 
-    private JobDetailResponse convertToDetailResponse(Job job) {
-        JobDetailResponse response = new JobDetailResponse();
-        response.setId(job.getId());
-        response.setEmployerId(job.getEmployer().getId());
-        response.setTitle(job.getTitle());
-        response.setCategory(job.getCategory());
-        response.setCompany(job.getCompany());
-        response.setLocation(job.getLocation());
-        response.setDescription(job.getDescription());
-        response.setStatus(job.getStatus().name());
-        response.setPostedDate(job.getPostedDate());
-        response.setDeadline(job.getDeadline());
-        response.setSalary(job.getSalary());
-        response.setSalaryType(job.getSalaryType());
-        response.setStartTime(job.getStartTime());
-        response.setEndTime(job.getEndTime());
-        response.setOtherRequirement(job.getOtherRequirement());
-        response.setViews(job.getViews());
-        response.setApplicants(job.getApplications() != null ? job.getApplications().size() : 0);
-        response.setGender(job.getGender());
-        response.setAge(job.getAge());
-        response.setEducation(job.getEducation());
+    // private JobDetailResponse convertToDetailResponse(FastApiResponse fastApiResponse) {
         
-        // JSON을 List로 변환
-        try {
-            if (job.getQualifications() != null && !job.getQualifications().isEmpty()) {
-                response.setQualifications(Arrays.asList(objectMapper.readValue(job.getQualifications(), String[].class)));
-            } else {
-                response.setQualifications(Collections.emptyList());
-            }
-            
-            if (job.getRequirements() != null && !job.getRequirements().isEmpty()) {
-                response.setRequirements(Arrays.asList(objectMapper.readValue(job.getRequirements(), String[].class)));
-            } else {
-                response.setRequirements(Collections.emptyList());
-            }
-            
-            if (job.getWorkDays() != null && !job.getWorkDays().isEmpty()) {
-                response.setWorkingDays(Arrays.asList(objectMapper.readValue(job.getWorkDays(), String[].class)));
-            } else {
-                response.setWorkingDays(Collections.emptyList());
-            }
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException("JSON 파싱 오류: " + e.getMessage());
-        }
+    //     JobDetailResponse response = new JobDetailResponse();
+    //     response.setId(job.getId());
+    //     response.setEmployerId(job.getEmployer().getId());
+    //     response.setTitle(job.getTitle());
+    //     response.setCategory(job.getCategory());
+    //     response.setCompany(job.getCompany());
+    //     response.setLocation(job.getLocation());
+    //     response.setDescription(job.getDescription());
+    //     response.setStatus(job.getStatus().name());
+    //     response.setPostedDate(job.getPostedDate());
+    //     response.setDeadline(job.getDeadline());
+    //     response.setSalary(job.getSalary());
+    //     response.setSalaryType(job.getSalaryType());
+    //     response.setStartTime(job.getStartTime());
+    //     response.setEndTime(job.getEndTime());
+    //     response.setOtherRequirement(job.getOtherRequirement());
+    //     response.setViews(job.getViews());
+    //     response.setApplicants(job.getApplications() != null ? job.getApplications().size() : 0);
+    //     response.setGender(job.getGender());
+    //     response.setAge(job.getAge());
+    //     response.setEducation(job.getEducation());
         
-        return response;
-    }
+    //     // JSON을 List로 변환
+    //     try {
+    //         if (job.getQualifications() != null && !job.getQualifications().isEmpty()) {
+    //             response.setQualifications(Arrays.asList(objectMapper.readValue(job.getQualifications(), String[].class)));
+    //         } else {
+    //             response.setQualifications(Collections.emptyList());
+    //         }
+            
+    //         if (job.getRequirements() != null && !job.getRequirements().isEmpty()) {
+    //             response.setRequirements(Arrays.asList(objectMapper.readValue(job.getRequirements(), String[].class)));
+    //         } else {
+    //             response.setRequirements(Collections.emptyList());
+    //         }
+            
+    //         if (job.getWorkDays() != null && !job.getWorkDays().isEmpty()) {
+    //             response.setWorkingDays(Arrays.asList(objectMapper.readValue(job.getWorkDays(), String[].class)));
+    //         } else {
+    //             response.setWorkingDays(Collections.emptyList());
+    //         }
+    //     } catch (JsonProcessingException e) {
+    //         throw new RuntimeException("JSON 파싱 오류: " + e.getMessage());
+    //     }
+        
+    //     return response;
+    // }
+
 }
