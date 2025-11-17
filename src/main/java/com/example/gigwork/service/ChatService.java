@@ -55,7 +55,6 @@ public class ChatService {
             if (request.getSearch() != null && !request.getSearch()) {
                 return convertToResponse(fastApiResponse);
             } else { //search=true
-                log.info("1111111111111111111111");
                 return convertToResponseForSearch(fastApiResponse);
             }
             
