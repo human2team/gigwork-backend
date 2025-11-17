@@ -3,11 +3,14 @@ package com.example.gigwork.service;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.example.gigwork.dto.FastApiRequest;
+import com.example.gigwork.dto.FastApiResponse;
 import com.example.gigwork.dto.JobCreateRequest;
 import com.example.gigwork.dto.JobDetailResponse;
 import com.example.gigwork.entity.EmployerProfile;
@@ -80,6 +83,12 @@ public class JobService {
         
         // 저장
         Job savedJob = jobRepository.save(job);
+
+        try {
+                        
+        } catch (Exception e) {
+            
+        }
         
         // 응답 변환
         return convertToDetailResponse(savedJob);
