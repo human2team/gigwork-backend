@@ -1,5 +1,10 @@
 package com.example.gigwork.service;
 
+
+import org.springframework.web.reactive.function.client.WebClient;
+import com.example.gigwork.dto.FastApiResponse;
+
+
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -20,6 +25,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Service
 public class JobService {
+
+        @Autowired
+        private WebClient webClient;
     
     @Autowired
     private JobRepository jobRepository;
@@ -80,6 +88,8 @@ public class JobService {
         
         // 저장
         Job savedJob = jobRepository.save(job);
+
+        
         
         // 응답 변환
         return convertToDetailResponse(savedJob);

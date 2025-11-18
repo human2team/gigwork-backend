@@ -85,8 +85,33 @@ public class CandidateController {
         result.put("region", profile.getPreferredRegion());
         result.put("address", profile.getAddress());
         result.put("education", profile.getEducation());
+        result.put("gender", profile.getGender());
         result.put("introduction", profile.getIntroduction());
         result.put("age", profile.getBirthDate() != null ? java.time.Period.between(profile.getBirthDate(), java.time.LocalDate.now()).getYears() : null);
+        // 희망 근무 조건
+        result.put("preferredRegion", profile.getPreferredRegion());
+        result.put("preferredDistrict", profile.getPreferredDistrict());
+        result.put("preferredDong", profile.getPreferredDong());
+        result.put("workDuration", profile.getWorkDuration());
+        result.put("workDays", profile.getWorkDays());
+        result.put("workTime", profile.getWorkTime());
+        result.put("mbti", profile.getMbti());
+        // 신체속성
+        result.put("height", profile.getHeight());
+        result.put("weight", profile.getWeight());
+        result.put("muscleStrength", profile.getMuscleStrength() != null ? profile.getMuscleStrength().toString() : null);
+        // 나의 강점 (쉼표로 구분된 문자열을 배열로 변환)
+        if (profile.getStrengths() != null && !profile.getStrengths().isEmpty()) {
+            String[] strengthsArr = profile.getStrengths().split(",");
+            List<String> strengthsList = new ArrayList<>();
+            for (String s : strengthsArr) {
+                String trimmed = s.trim();
+                if (!trimmed.isEmpty()) strengthsList.add(trimmed);
+            }
+            result.put("strengths", strengthsList);
+        } else {
+            result.put("strengths", new ArrayList<>());
+        }
         // 자격증
         result.put("licenses", profile.getLicenses().stream().map(l -> {
             Map<String, Object> lic = new HashMap<>();

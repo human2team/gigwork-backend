@@ -53,7 +53,6 @@ public class RecommendationController {
             List<RecommendationResponse> recommendations = new ArrayList<>();
             for (Job job : activeJobs) {
                 int suitability = calculateSuitability(profile, job);
-                
                 RecommendationResponse response = new RecommendationResponse();
                 response.setId(job.getId());
                 response.setTitle(job.getTitle());
@@ -64,7 +63,10 @@ public class RecommendationController {
                 response.setSalaryType(job.getSalaryType());
                 response.setDescription(job.getDescription());
                 response.setSuitability(suitability);
-                
+                // status, deadline 필드 추가
+                String status = job.getStatus() != null ? job.getStatus().name() : "ACTIVE";
+                response.setStatus(status);
+                response.setDeadline(job.getDeadline());
                 recommendations.add(response);
             }
 

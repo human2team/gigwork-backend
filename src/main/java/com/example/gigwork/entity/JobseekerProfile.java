@@ -83,14 +83,17 @@ public class JobseekerProfile {
     
     // 1:N 관계 - 자격증
     @OneToMany(mappedBy = "jobseeker", cascade = CascadeType.ALL, orphanRemoval = true)
+    @com.fasterxml.jackson.annotation.JsonIgnore
     private List<License> licenses = new ArrayList<>();
     
     // 1:N 관계 - 경력
     @OneToMany(mappedBy = "jobseeker", cascade = CascadeType.ALL, orphanRemoval = true)
+    @com.fasterxml.jackson.annotation.JsonIgnore
     private List<Experience> experiences = new ArrayList<>();
     
     // 1:N 관계 - 지원서
     @OneToMany(mappedBy = "jobseeker", cascade = CascadeType.ALL, orphanRemoval = true)
+    @com.fasterxml.jackson.annotation.JsonIgnore
     private List<Application> applications = new ArrayList<>();
     
     // 기본 생성자

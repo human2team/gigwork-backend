@@ -2,7 +2,6 @@ package com.example.gigwork.service;
 
 import java.time.LocalDate;
 import java.time.Period;
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -56,6 +55,9 @@ public class RecommendationService {
      * Job Entity -> RecommendationResponse DTO 변환
      */
     private RecommendationResponse convertToRecommendationResponse(Job job, int suitability) {
+        // 로그 추가: status, deadline 값 확인
+        System.out.println("[LOG] Job ID: " + job.getId() + ", Status: " + job.getStatus() + ", Deadline: " + job.getDeadline());
+
         RecommendationResponse response = new RecommendationResponse();
         response.setId(job.getId());
         response.setTitle(job.getTitle());
@@ -66,6 +68,10 @@ public class RecommendationService {
         response.setSalaryType(job.getSalaryType());
         response.setDescription(job.getDescription());
         response.setSuitability(suitability);
+        // status, deadline 보정: null이면 기본값 부여
+        String status = job.getStatus() != null ? job.getStatus().name() : "ACTIVE";
+        response.setStatus(status);
+        response.setDeadline(job.getDeadline());
         return response;
     }
 
