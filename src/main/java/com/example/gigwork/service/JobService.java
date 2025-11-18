@@ -8,6 +8,7 @@ import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.reactive.function.client.WebClient;
 
 import com.example.gigwork.dto.FastApiRequest;
 import com.example.gigwork.dto.FastApiResponse;
@@ -30,7 +31,11 @@ public class JobService {
     @Autowired
     private EmployerProfileRepository employerProfileRepository;
     
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    @Autowired
+    private ObjectMapper objectMapper;
+    
+    @Autowired
+    private WebClient webClient;
     
     /**
      * 일자리 공고 등록
@@ -85,9 +90,24 @@ public class JobService {
         Job savedJob = jobRepository.save(job);
 
         try {
-                        
-        } catch (Exception e) {
+            Long jobId = savedJob.getId();
             
+            // FastAPI /update/ 호출
+            Map<String, Object> updateResponse = webClient.post()
+                .uri("/update/")
+                .bodyValue(Map.of(
+                    "id", jobId.toString()
+                ))
+                .retrieve()
+                .bodyToMono(Map.class)
+                .block();
+            
+            System.out.println("[FastAPI /update/ Response]");
+            System.out.println("code: " + updateResponse.get("code"));
+            System.out.println("msg: " + updateResponse.get("msg"));
+
+        } catch (Exception e) {
+            System.err.println("[FastAPI /update/ Error]: " + e.getMessage());
         }
         
         // 응답 변환
