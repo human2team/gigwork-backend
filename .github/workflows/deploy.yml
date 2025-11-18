@@ -1,4 +1,4 @@
-name: Deploy Servers
+name: Deploy Backend Server
 
 on:
   push:
@@ -9,40 +9,29 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
+      - name: Checkout backend code
         uses: actions/checkout@v3
 
-      - name: Transfer files to server
+      # backend 코드 업로드 (/deploy/backend)
+      - name: Upload Backend source
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
           source: "./"
-          target: "/deploy"
+          target: "/deploy/backend"
+          rm: true
 
-      - name: Deploy containers
+      - name: Restart Backend container
         uses: appleboy/ssh-action@v1.0.0
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
           port: ${{ secrets.SSH_PORT }}
-          envs: OPENAI_API_KEY,DB_URL
           script: |
             cd /deploy
-
-            docker compose down
-            
-            # AI 컨테이너만 환경변수 포함해서 빌드 & 실행
-            OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }} \
-            DB_URL=${{ secrets.DB_URL }} \
-            docker compose build ai
-            
-            # backend는 환경변수 없이 일반 빌드
+            docker compose stop backend
             docker compose build backend
-
-            # 전체 컨테이너 실행 (AI는 env 적용됨, backend는 default 실행)
-            OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }} \
-            DB_URL=${{ secrets.DB_URL }} \
-            docker compose up -d backend ai nginx
+            docker compose up -d backend
