@@ -9,7 +9,6 @@ import com.example.gigwork.dto.ChatRequest;
 import com.example.gigwork.dto.ChatResponse;
 import com.example.gigwork.dto.FastApiRequest;
 import com.example.gigwork.dto.FastApiResponse;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,7 +19,7 @@ import lombok.extern.slf4j.Slf4j;
 public class ChatService {
 
     private final WebClient webClient;
-    private final ObjectMapper objectMapper;
+    // private final ObjectMapper objectMapper;
 
     public ChatResponse processChat(ChatRequest request) {
         try {
@@ -42,9 +41,7 @@ public class ChatService {
                     .retrieve()
                     .bodyToMono(FastApiResponse.class)
                     .block();
-
             log.info("Received response from FastAPI: {}", fastApiResponse);
-            
             if (request.getSearch() != null && !request.getSearch()) {
                 return convertToResponse(fastApiResponse);
             } else { //search=true
