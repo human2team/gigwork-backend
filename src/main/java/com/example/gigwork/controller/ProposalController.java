@@ -1,5 +1,6 @@
 package com.example.gigwork.controller;
 
+import com.example.gigwork.dto.ProposalDetailResponse;
 import com.example.gigwork.entity.Proposal;
 import com.example.gigwork.service.ProposalService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -49,7 +50,7 @@ public class ProposalController {
     }
 
     @GetMapping("/{proposalId}")
-    public Proposal getProposalById(@PathVariable Long proposalId) {
+    public ProposalDetailResponse getProposalById(@PathVariable Long proposalId) {
         return proposalService.getProposalById(proposalId);
     }
 }

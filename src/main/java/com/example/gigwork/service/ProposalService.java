@@ -1,11 +1,15 @@
 package com.example.gigwork.service;
 
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.example.gigwork.dto.JobDetailResponse;
+import com.example.gigwork.dto.ProposalDetailResponse;
 import com.example.gigwork.entity.EmployerProfile;
 import com.example.gigwork.entity.Job;
 import com.example.gigwork.entity.JobseekerProfile;
@@ -14,6 +18,8 @@ import com.example.gigwork.repository.EmployerProfileRepository;
 import com.example.gigwork.repository.JobRepository;
 import com.example.gigwork.repository.JobseekerProfileRepository;
 import com.example.gigwork.repository.ProposalRepository;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Service
 public class ProposalService {
@@ -25,6 +31,8 @@ public class ProposalService {
     private JobseekerProfileRepository jobseekerProfileRepository;
     @Autowired
     private EmployerProfileRepository employerProfileRepository;
+
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     public Proposal createProposal(Long jobId, Long jobseekerId, Long employerId) {
         Optional<Job> jobOpt = jobRepository.findById(jobId);
@@ -48,9 +56,74 @@ public class ProposalService {
         return proposalRepository.findByEmployerId(employerId);
     }
 
-    public Proposal getProposalById(Long proposalId) {
-        return proposalRepository.findById(proposalId)
+    public ProposalDetailResponse getProposalById(Long proposalId) {
+        Proposal proposal = proposalRepository.findById(proposalId)
                 .orElseThrow(() -> new IllegalArgumentException("Proposal not found"));
+
+        Job job = proposal.getJob();
+        JobDetailResponse jobDto = convertToJobDetailResponse(job);
+
+        ProposalDetailResponse.EmployerSummary employerSummary =
+                new ProposalDetailResponse.EmployerSummary(
+                        proposal.getEmployer().getId(),
+                        proposal.getEmployer().getCompanyName()
+                );
+
+        ProposalDetailResponse dto = new ProposalDetailResponse();
+        dto.setId(proposal.getId());
+        dto.setJob(jobDto);
+        dto.setEmployer(employerSummary);
+        dto.setStatus(proposal.getStatus());
+        dto.setCreatedAt(proposal.getCreatedAt());
+        return dto;
+    }
+
+    private JobDetailResponse convertToJobDetailResponse(Job job) {
+        JobDetailResponse response = new JobDetailResponse();
+        response.setId(job.getId());
+        response.setEmployerId(job.getEmployer().getId());
+        response.setTitle(job.getTitle());
+        response.setCategory(job.getCategory());
+        response.setCompany(job.getCompany());
+        response.setLocation(job.getLocation());
+        response.setDescription(job.getDescription());
+        response.setStatus(job.getStatus().name());
+        response.setPostedDate(job.getPostedDate());
+        response.setDeadline(job.getDeadline());
+        response.setSalary(job.getSalary());
+        response.setSalaryType(job.getSalaryType());
+        response.setStartTime(job.getStartTime());
+        response.setEndTime(job.getEndTime());
+        response.setOtherRequirement(job.getOtherRequirement());
+        response.setViews(job.getViews());
+        response.setApplicants(job.getApplications() != null ? job.getApplications().size() : 0);
+        response.setGender(job.getGender());
+        response.setAge(job.getAge());
+        response.setEducation(job.getEducation());
+
+        try {
+            if (job.getQualifications() != null && !job.getQualifications().isEmpty()) {
+                response.setQualifications(Arrays.asList(objectMapper.readValue(job.getQualifications(), String[].class)));
+            } else {
+                response.setQualifications(Collections.emptyList());
+            }
+
+            if (job.getRequirements() != null && !job.getRequirements().isEmpty()) {
+                response.setRequirements(Arrays.asList(objectMapper.readValue(job.getRequirements(), String[].class)));
+            } else {
+                response.setRequirements(Collections.emptyList());
+            }
+
+            if (job.getWorkDays() != null && !job.getWorkDays().isEmpty()) {
+                response.setWorkingDays(Arrays.asList(objectMapper.readValue(job.getWorkDays(), String[].class)));
+            } else {
+                response.setWorkingDays(Collections.emptyList());
+            }
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("JSON 파싱 오류: " + e.getMessage());
+        }
+
+        return response;
     }
 
     public void deleteProposal(Long jobId, Long jobseekerId, Long employerId) {
