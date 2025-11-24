@@ -69,6 +69,13 @@ public class JobseekerProfile {
     @Column(columnDefinition = "TEXT")
     private String introduction;
     
+    // 희망 업직종 (소분류) - 코드/명 콤마 구분 저장
+    @Column(name = "desired_category_codes", columnDefinition = "TEXT")
+    private String desiredCategoryCodes;
+
+    @Column(name = "desired_category_names", columnDefinition = "TEXT")
+    private String desiredCategoryNames;
+    
     // 나의 강점 (쉼표로 구분된 문자열)
     private String strengths;
     
@@ -226,6 +233,22 @@ public class JobseekerProfile {
     
     public void setIntroduction(String introduction) {
         this.introduction = introduction;
+    }
+
+    public String getDesiredCategoryCodes() {
+        return desiredCategoryCodes;
+    }
+
+    public void setDesiredCategoryCodes(String desiredCategoryCodes) {
+        this.desiredCategoryCodes = desiredCategoryCodes;
+    }
+
+    public String getDesiredCategoryNames() {
+        return desiredCategoryNames;
+    }
+
+    public void setDesiredCategoryNames(String desiredCategoryNames) {
+        this.desiredCategoryNames = desiredCategoryNames;
     }
     
     public String getStrengths() {

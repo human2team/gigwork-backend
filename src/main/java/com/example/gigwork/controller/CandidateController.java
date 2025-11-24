@@ -42,8 +42,24 @@ public class CandidateController {
         List<JobseekerProfile> profiles = jobseekerProfileRepository.findAll();
         List<Map<String, Object>> result = new ArrayList<>();
         for (JobseekerProfile profile : profiles) {
-            // 필터링
-            if (location != null && !location.equals("전체") && (profile.getAddress() == null || !profile.getAddress().contains(location))) continue;
+            // 필터링 (선호 지역 우선, 없으면 주소 사용)
+            if (location != null && !location.equals("전체")) {
+                String region = profile.getPreferredRegion();
+                String district = profile.getPreferredDistrict();
+                String dong = profile.getPreferredDong();
+                StringBuilder sb = new StringBuilder();
+                if (region != null && !region.isEmpty()) sb.append(region).append(" ");
+                if (district != null && !district.isEmpty()) sb.append(district).append(" ");
+                if (dong != null && !dong.isEmpty() && !"전체".equals(dong)) sb.append(dong);
+                String preferredText = sb.toString().trim();
+                boolean matchesLocation = false;
+                if (!preferredText.isEmpty()) {
+                    matchesLocation = preferredText.contains(location);
+                } else if (profile.getAddress() != null) {
+                    matchesLocation = profile.getAddress().contains(location);
+                }
+                if (!matchesLocation) continue;
+            }
             List<License> licenses = profile.getLicenses();
             if (license != null && !license.equals("전체") && licenses.stream().noneMatch(l -> l.getName().contains(license))) continue;
             // 적합도 점수는 임시로 80~99 랜덤
@@ -63,6 +79,22 @@ public class CandidateController {
             map.put("name", profile.getName());
             map.put("age", profile.getBirthDate() != null ? java.time.Period.between(profile.getBirthDate(), java.time.LocalDate.now()).getYears() : null);
             map.put("location", profile.getAddress());
+            // 후보 선호 업직종(소분류 명 리스트)
+            if (profile.getDesiredCategoryNames() != null && !profile.getDesiredCategoryNames().isEmpty()) {
+                String[] names = profile.getDesiredCategoryNames().split(",");
+                List<String> list = new ArrayList<>();
+                for (String n : names) {
+                    String t = n.trim();
+                    if (!t.isEmpty()) list.add(t);
+                }
+                map.put("desiredCategories", list);
+            } else {
+                map.put("desiredCategories", new ArrayList<>());
+            }
+            // 희망 근무지역(목록 응답에도 포함)
+            map.put("preferredRegion", profile.getPreferredRegion());
+            map.put("preferredDistrict", profile.getPreferredDistrict());
+            map.put("preferredDong", profile.getPreferredDong());
             map.put("licenses", licenses.stream().map(License::getName).collect(Collectors.toList()));
             map.put("experience", experiences.stream().map(e -> (e.getCompany() != null ? e.getCompany() : "") + (e.getPosition() != null ? " - " + e.getPosition() : "") + (e.getStartDate() != null ? " - " + e.getStartDate() : "")).collect(Collectors.toList()));
             map.put("suitability", suitability);

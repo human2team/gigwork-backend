@@ -81,6 +81,9 @@ public class ProfileService {
         profile.setStrengths(request.getStrengths());
         profile.setMbti(request.getMbti());
         profile.setIntroduction(request.getIntroduction());
+        // 희망 업직종
+        profile.setDesiredCategoryCodes(request.getDesiredCategoryCodes());
+        profile.setDesiredCategoryNames(request.getDesiredCategoryNames());
         
         JobseekerProfile updatedProfile = jobseekerProfileRepository.save(profile);
         
@@ -111,7 +114,9 @@ public class ProfileService {
             profile.getWeight(),
             profile.getStrengths(),
             profile.getMbti(),
-            profile.getIntroduction()
+            profile.getIntroduction(),
+            profile.getDesiredCategoryCodes(),
+            profile.getDesiredCategoryNames()
         );
     }
 }

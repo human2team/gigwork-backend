@@ -28,5 +28,8 @@ public class JobseekerProfileRequest {
     private String strengths;
     private String mbti;
     private String introduction;
+    // 희망 업직종 (소분류) - 코드/명 콤마 구분
+    private String desiredCategoryCodes;
+    private String desiredCategoryNames;
 }
     
