@@ -127,6 +127,18 @@ public class CandidateController {
         result.put("workDuration", profile.getWorkDuration());
         result.put("workDays", profile.getWorkDays());
         result.put("workTime", profile.getWorkTime());
+        // 희망 업직종(소분류 명 리스트)
+        if (profile.getDesiredCategoryNames() != null && !profile.getDesiredCategoryNames().isEmpty()) {
+            String[] names = profile.getDesiredCategoryNames().split(",");
+            java.util.List<String> list = new java.util.ArrayList<>();
+            for (String n : names) {
+                String t = n.trim();
+                if (!t.isEmpty()) list.add(t);
+            }
+            result.put("desiredCategories", list);
+        } else {
+            result.put("desiredCategories", new java.util.ArrayList<>());
+        }
         result.put("mbti", profile.getMbti());
         // 신체속성
         result.put("height", profile.getHeight());
