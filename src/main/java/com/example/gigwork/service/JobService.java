@@ -46,7 +46,7 @@ public class JobService {
     
     private final ObjectMapper objectMapper = new ObjectMapper();
     
-    // 임베딩 및 FastAPI 호출 공통 메서드
+    //임베딩 및 FastAPI 호출 공통 메서드
     private void updateJobEmbeddingAfterCommit(Long jobId) {
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
             @Override
