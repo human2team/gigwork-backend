@@ -49,6 +49,29 @@ public class ProposalController {
         return proposalService.getProposalsForEmployer(employerId);
     }
 
+    // 거절된 제안 목록 (사업자)
+    @GetMapping("/declined")
+    public List<Proposal> getDeclined(@RequestParam("employerId") Long employerId) {
+        return proposalService.getDeclinedForEmployer(employerId);
+    }
+
+    // 제안 거절(상태만 REJECTED로 변경) - proposalId 기준
+    @PostMapping("/decline")
+    public Proposal decline(
+        @RequestParam(value = "proposalId", required = false) Long proposalId,
+        @RequestParam(value = "jobId", required = false) Long jobId,
+        @RequestParam(value = "jobseekerId", required = false) Long jobseekerId,
+        @RequestParam(value = "employerId", required = false) Long employerId
+    ) {
+        if (proposalId != null) {
+            return proposalService.declineByProposalId(proposalId);
+        }
+        if (jobId != null && jobseekerId != null && employerId != null) {
+            return proposalService.declineByTriplet(jobId, jobseekerId, employerId);
+        }
+        throw new IllegalArgumentException("proposalId 또는 (jobId, jobseekerId, employerId)가 필요합니다.");
+    }
+
     @GetMapping("/{proposalId}")
     public ProposalDetailResponse getProposalById(@PathVariable Long proposalId) {
         return proposalService.getProposalById(proposalId);

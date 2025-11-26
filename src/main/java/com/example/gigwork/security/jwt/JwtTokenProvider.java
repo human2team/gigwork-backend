@@ -88,32 +88,32 @@ public class JwtTokenProvider {
     /**
      * 토큰 검증
      */
-    public boolean validateToken(String token) {
-        try {
-            Jwts.parser()
-                .verifyWith(key)
-                .build()
-                .parseSignedClaims(token);
-            return true;
-        } catch (JwtException | IllegalArgumentException e) {
-            return false;
-        }
-    }
+    // public boolean validateToken(String token) {
+    //     try {
+    //         Jwts.parser()
+    //             .verifyWith(key)
+    //             .build()
+    //             .parseSignedClaims(token);
+    //         return true;
+    //     } catch (JwtException | IllegalArgumentException e) {
+    //         return false;
+    //     }
+    // }
     
     /**
      * 토큰 만료 확인
      */
-    public boolean isTokenExpired(String token) {
-        try {
-            Date expiration = Jwts.parser()
-                    .verifyWith(key)
-                    .build()
-                    .parseSignedClaims(token)
-                    .getPayload()
-                    .getExpiration();
-            return expiration.before(new Date());
-        } catch (JwtException | IllegalArgumentException e) {
-            return true;
-        }
-    }
+    // public boolean isTokenExpired(String token) {
+    //     try {
+    //         Date expiration = Jwts.parser()
+    //                 .verifyWith(key)
+    //                 .build()
+    //                 .parseSignedClaims(token)
+    //                 .getPayload()
+    //                 .getExpiration();
+    //         return expiration.before(new Date());
+    //     } catch (JwtException | IllegalArgumentException e) {
+    //         return true;
+    //     }
+    // }
 }

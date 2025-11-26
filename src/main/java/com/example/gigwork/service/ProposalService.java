@@ -41,6 +41,12 @@ public class ProposalService {
         if (jobOpt.isEmpty() || jobseekerOpt.isEmpty() || employerOpt.isEmpty()) {
             throw new IllegalArgumentException("Invalid job, jobseeker, or employer id");
         }
+        // Upsert: 기존 제안이 있으면 상태를 SENT로 되돌려 재제안으로 처리
+        Proposal existing = proposalRepository.findFirstByJobIdAndJobseekerIdAndEmployerId(jobId, jobseekerId, employerId);
+        if (existing != null) {
+            existing.setStatus("SENT");
+            return proposalRepository.save(existing);
+        }
         Proposal proposal = new Proposal();
         proposal.setJob(jobOpt.get());
         proposal.setJobseeker(jobseekerOpt.get());
@@ -54,6 +60,10 @@ public class ProposalService {
 
     public List<Proposal> getProposalsForEmployer(Long employerId) {
         return proposalRepository.findByEmployerId(employerId);
+    }
+
+    public List<Proposal> getDeclinedForEmployer(Long employerId) {
+        return proposalRepository.findByEmployerIdAndStatus(employerId, "REJECTED");
     }
 
     public ProposalDetailResponse getProposalById(Long proposalId) {
@@ -135,5 +145,19 @@ public class ProposalService {
             }
         }
         throw new IllegalArgumentException("Proposal not found for cancellation");
+    }
+
+    public Proposal declineByProposalId(Long proposalId) {
+        Proposal proposal = proposalRepository.findById(proposalId)
+                .orElseThrow(() -> new IllegalArgumentException("Proposal not found"));
+        proposal.setStatus("REJECTED");
+        return proposalRepository.save(proposal);
+    }
+
+    public Proposal declineByTriplet(Long jobId, Long jobseekerId, Long employerId) {
+        Proposal proposal = proposalRepository.findFirstByJobIdAndJobseekerIdAndEmployerId(jobId, jobseekerId, employerId);
+        if (proposal == null) throw new IllegalArgumentException("Proposal not found");
+        proposal.setStatus("REJECTED");
+        return proposalRepository.save(proposal);
     }
 }

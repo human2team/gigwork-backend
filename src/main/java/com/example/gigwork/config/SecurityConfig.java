@@ -1,10 +1,9 @@
 package com.example.gigwork.config;
 
-import com.example.gigwork.security.jwt.JwtAuthenticationEntryPoint;
-import com.example.gigwork.security.jwt.JwtAuthenticationFilter;
+import java.util.Arrays;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -13,13 +12,12 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-import java.util.Arrays;
-import java.util.List;
+import com.example.gigwork.security.jwt.JwtAuthenticationEntryPoint;
+import com.example.gigwork.security.jwt.JwtAuthenticationFilter;
 
 @Configuration
 @EnableWebSecurity
@@ -67,50 +65,12 @@ public class SecurityConfig {
         http
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .csrf(csrf -> csrf.disable())
-            
-            // 세션 사용 안 함 (Stateless - JWT 사용)
-            .sessionManagement(session -> 
-                session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-            )
-            
-            // 인증 실패 처리
-            .exceptionHandling(exception -> 
-                exception.authenticationEntryPoint(jwtAuthenticationEntryPoint)
-            )
-            
-            // URL별 권한 설정
-            .authorizeHttpRequests(auth -> auth
-                // 인증 API - 모두 허용
-                .requestMatchers("/api/auth/**").permitAll()
-                
-                // 지역/카테고리 - 모두 허용
-                .requestMatchers("/api/regions/**").permitAll()
-                .requestMatchers("/api/categories/**").permitAll()
-                
-                // 공고 관련 - GET 요청은 모두 허용, POST/PUT/DELETE는 인증 필요
-                .requestMatchers(HttpMethod.GET, "/api/jobs/**").permitAll()
-                .requestMatchers(HttpMethod.POST, "/api/jobs/**").authenticated()
-                .requestMatchers(HttpMethod.PUT, "/api/jobs/**").authenticated()
-                .requestMatchers(HttpMethod.DELETE, "/api/jobs/**").authenticated()
-                
-                // 구직자/고용주 프로필 - 인증 필요
-                .requestMatchers("/api/jobseeker/**").authenticated()
-                .requestMatchers("/api/employer/**").authenticated()
-                
-                // 지원/제안 - 인증 필요
-                .requestMatchers("/api/applications/**").authenticated()
-                .requestMatchers("/api/proposals/**").authenticated()
-                
-                // 저장된 공고 - 인증 필요
-                .requestMatchers("/api/saved-jobs/**").authenticated()
-                
-                // 나머지는 모두 허용
-                .anyRequest().permitAll()
-            )
-            
-            // JWT 필터 추가
-            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
-        
+            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .exceptionHandling(exception -> exception.authenticationEntryPoint(jwtAuthenticationEntryPoint))
+            // 모든 요청 인증 없이 허용
+            .authorizeHttpRequests(auth -> auth.anyRequest().permitAll());
+        // JWT 필터 제거 (필요시)
+        // .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
 }
