@@ -1,6 +1,7 @@
 package com.example.gigwork.service;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -11,13 +12,17 @@ import com.example.gigwork.dto.AuthResponse;
 import com.example.gigwork.dto.EmployerSignupRequest;
 import com.example.gigwork.dto.JobseekerSignupRequest;
 import com.example.gigwork.dto.LoginRequest;
+import com.example.gigwork.dto.TokenRefreshResponse;
 import com.example.gigwork.entity.EmployerProfile;
 import com.example.gigwork.entity.JobseekerProfile;
+import com.example.gigwork.entity.RefreshToken;
 import com.example.gigwork.entity.User;
 import com.example.gigwork.enums.UserType;
 import com.example.gigwork.repository.EmployerProfileRepository;
 import com.example.gigwork.repository.JobseekerProfileRepository;
+import com.example.gigwork.repository.RefreshTokenRepository;
 import com.example.gigwork.repository.UserRepository;
+import com.example.gigwork.security.jwt.JwtTokenProvider;
 
 @Service
 public class AuthService {
@@ -32,7 +37,13 @@ public class AuthService {
     private EmployerProfileRepository employerProfileRepository;
     
     @Autowired
+    private RefreshTokenRepository refreshTokenRepository;
+    
+    @Autowired
     private PasswordEncoder passwordEncoder;
+    
+    @Autowired
+    private JwtTokenProvider jwtTokenProvider;
     
     @Transactional
     public AuthResponse registerJobseeker(JobseekerSignupRequest request) {
@@ -122,7 +133,7 @@ public class AuthService {
     /**
      * 로그인
      */
-    @Transactional(readOnly = true)
+    @Transactional
     public AuthResponse login(LoginRequest request) {
         // 1. 이메일로 사용자 찾기
         User user = userRepository.findByEmail(request.getEmail())
@@ -133,13 +144,84 @@ public class AuthService {
             throw new RuntimeException("이메일 또는 비밀번호가 일치하지 않습니다.");
         }
         
-        // 3. 응답 생성
-        return new AuthResponse(
+        // 3. JWT 토큰 생성
+        String accessToken = jwtTokenProvider.createAccessToken(
+            user.getEmail(), 
+            user.getUserType().name()
+        );
+        String refreshToken = jwtTokenProvider.createRefreshToken(user.getEmail());
+        
+        // 4. Refresh Token DB에 저장 (기존 토큰 삭제 후 저장)
+        refreshTokenRepository.deleteByUser(user);
+        
+        RefreshToken refreshTokenEntity = new RefreshToken();
+        refreshTokenEntity.setToken(refreshToken);
+        refreshTokenEntity.setUser(user);
+        refreshTokenEntity.setExpiryDate(
+            LocalDateTime.now().plusDays(7)
+        );
+        refreshTokenRepository.save(refreshTokenEntity);
+        
+        // 5. 응답 생성
+        AuthResponse response = new AuthResponse(
             user.getId(),
             user.getEmail(),
             user.getUserType().name(),
             "로그인에 성공했습니다."
         );
+        response.setAccessToken(accessToken);
+        response.setRefreshToken(refreshToken);
+        
+        return response;
+    }
+    
+    /**
+     * Access Token 갱신
+     */
+    @Transactional
+    public TokenRefreshResponse refreshToken(String refreshToken) {
+        // 1. Refresh Token 검증
+        if (!jwtTokenProvider.validateToken(refreshToken)) {
+            throw new RuntimeException("유효하지 않은 Refresh Token입니다");
+        }
+        
+        // 2. DB에서 Refresh Token 조회
+        RefreshToken storedToken = refreshTokenRepository
+                .findByToken(refreshToken)
+                .orElseThrow(() -> new RuntimeException("Refresh Token을 찾을 수 없습니다"));
+        
+        // 3. 만료 확인
+        if (storedToken.isExpired()) {
+            refreshTokenRepository.delete(storedToken);
+            throw new RuntimeException("Refresh Token이 만료되었습니다");
+        }
+        
+        // 4. 새 Access Token 생성
+        User user = storedToken.getUser();
+        String newAccessToken = jwtTokenProvider.createAccessToken(
+            user.getEmail(),
+            user.getUserType().name()
+        );
+        
+        // 5. 새 Refresh Token 생성 (선택적 - 보안 강화)
+        String newRefreshToken = jwtTokenProvider.createRefreshToken(user.getEmail());
+        storedToken.setToken(newRefreshToken);
+        storedToken.setExpiryDate(LocalDateTime.now().plusDays(7));
+        refreshTokenRepository.save(storedToken);
+        
+        return new TokenRefreshResponse(
+            newAccessToken,
+            newRefreshToken,
+            "토큰이 갱신되었습니다."
+        );
+    }
+    
+    /**
+     * 로그아웃
+     */
+    @Transactional
+    public void logout(String refreshToken) {
+        refreshTokenRepository.deleteByToken(refreshToken);
     }
     
     /**

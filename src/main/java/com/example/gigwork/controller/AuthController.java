@@ -4,6 +4,8 @@ import com.example.gigwork.dto.AuthResponse;
 import com.example.gigwork.dto.EmployerSignupRequest;
 import com.example.gigwork.dto.JobseekerSignupRequest;
 import com.example.gigwork.dto.LoginRequest;
+import com.example.gigwork.dto.TokenRefreshRequest;
+import com.example.gigwork.dto.TokenRefreshResponse;
 import com.example.gigwork.service.AuthService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -60,6 +62,36 @@ public class AuthController {
             return ResponseEntity.ok(response);
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(new ErrorResponse(e.getMessage()));
+        }
+    }
+    
+    /**
+     * Access Token 갱신 API
+     * POST /api/auth/refresh
+     */
+    @PostMapping("/refresh")
+    public ResponseEntity<?> refreshToken(@RequestBody TokenRefreshRequest request) {
+        try {
+            TokenRefreshResponse response = authService.refreshToken(request.getRefreshToken());
+            return ResponseEntity.ok(response);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(new ErrorResponse(e.getMessage()));
+        }
+    }
+    
+    /**
+     * 로그아웃 API
+     * POST /api/auth/logout
+     */
+    @PostMapping("/logout")
+    public ResponseEntity<?> logout(@RequestBody TokenRefreshRequest request) {
+        try {
+            authService.logout(request.getRefreshToken());
+            return ResponseEntity.ok(new SuccessResponse("로그아웃이 완료되었습니다."));
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(new ErrorResponse(e.getMessage()));
         }
     }
