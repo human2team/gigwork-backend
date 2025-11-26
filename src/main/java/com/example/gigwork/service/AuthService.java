@@ -263,7 +263,10 @@ public class AuthService {
             throw new RuntimeException("비밀번호가 일치하지 않습니다.");
         }
         
-        // 3. 사용자 삭제 (CASCADE로 프로필, 자격증, 경력, 공고 등 모두 삭제됨)
+        // 3. 연관 Refresh Token 선삭제 (FK 제약 위반 방지)
+        refreshTokenRepository.deleteByUser(user);
+
+        // 4. 사용자 삭제 (CASCADE로 프로필, 자격증, 경력, 공고 등 모두 삭제됨)
         userRepository.delete(user);
     }
 }
