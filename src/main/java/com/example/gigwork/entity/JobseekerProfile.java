@@ -1,6 +1,7 @@
 package com.example.gigwork.entity;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -102,6 +103,9 @@ public class JobseekerProfile {
     @OneToMany(mappedBy = "jobseeker", cascade = CascadeType.ALL, orphanRemoval = true)
     @com.fasterxml.jackson.annotation.JsonIgnore
     private List<Application> applications = new ArrayList<>();
+
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
     
     // 기본 생성자
     public JobseekerProfile() {}
@@ -305,5 +309,13 @@ public class JobseekerProfile {
     
     public void setApplications(List<Application> applications) {
         this.applications = applications;
+    }
+
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
     }
 }

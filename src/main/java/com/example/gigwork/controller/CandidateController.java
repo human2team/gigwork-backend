@@ -99,6 +99,26 @@ public class CandidateController {
             map.put("experience", experiences.stream().map(e -> (e.getCompany() != null ? e.getCompany() : "") + (e.getPosition() != null ? " - " + e.getPosition() : "") + (e.getStartDate() != null ? " - " + e.getStartDate() : "")).collect(Collectors.toList()));
             map.put("suitability", suitability);
             map.put("available", true); // 실제 구현시 상태 필드 추가 필요
+            // 매칭 강화를 위한 추가 필드
+            map.put("introduction", profile.getIntroduction());
+            // strengths -> 배열로 변환
+            if (profile.getStrengths() != null && !profile.getStrengths().isEmpty()) {
+                String[] strengthsArr = profile.getStrengths().split(",");
+                List<String> strengthsList = new ArrayList<>();
+                for (String sVal : strengthsArr) {
+                    String trimmed = sVal.trim();
+                    if (!trimmed.isEmpty()) strengthsList.add(trimmed);
+                }
+                map.put("strengths", strengthsList);
+            } else {
+                map.put("strengths", new ArrayList<>());
+            }
+            map.put("gender", profile.getGender());
+            map.put("workTime", profile.getWorkTime());
+            // 프로필 최종 저장 시각 포함 (프런트 '수정일' 표기를 위해)
+            map.put("jobseekerProfile", new HashMap<String, Object>() {{
+                put("updatedAt", profile.getUpdatedAt());
+            }});
             result.add(map);
         }
         return new ResponseEntity<>(result, HttpStatus.OK);

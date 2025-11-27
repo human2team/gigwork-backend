@@ -1,5 +1,7 @@
 package com.example.gigwork.service;
 
+import java.time.LocalDateTime;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,6 +36,7 @@ public class ProfileService {
                     JobseekerProfile newProfile = new JobseekerProfile();
                     newProfile.setUser(user);
                     newProfile.setName("사용자"); // 기본값
+                    newProfile.setUpdatedAt(LocalDateTime.now());
                     return jobseekerProfileRepository.save(newProfile);
                 });
         
@@ -84,6 +87,9 @@ public class ProfileService {
         // 희망 업직종
         profile.setDesiredCategoryCodes(request.getDesiredCategoryCodes());
         profile.setDesiredCategoryNames(request.getDesiredCategoryNames());
+        
+        // 수정 시간 업데이트
+        profile.setUpdatedAt(LocalDateTime.now());
         
         JobseekerProfile updatedProfile = jobseekerProfileRepository.save(profile);
         
