@@ -15,6 +15,7 @@ public class JobCreateRequest {
     private String category;
     private String company;
     private String location;
+    private String addressDetail;
     private String description;
     private List<String> qualifications;
     private List<String> requirements;

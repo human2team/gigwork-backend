@@ -96,6 +96,7 @@ public class ProposalService {
         response.setCategory(job.getCategory());
         response.setCompany(job.getCompany());
         response.setLocation(job.getLocation());
+        response.setAddressDetail(job.getAddressDetail());
         response.setDescription(job.getDescription());
         response.setStatus(job.getStatus().name());
         response.setPostedDate(job.getPostedDate());

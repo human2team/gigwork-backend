@@ -200,6 +200,7 @@ public class JobService {
         job.setCategory(request.getCategory());
         job.setCompany(request.getCompany());
         job.setLocation(request.getLocation());
+        job.setAddressDetail(request.getAddressDetail());
         job.setDescription(request.getDescription());
         
         // JSON 변환하여 저장
@@ -293,6 +294,7 @@ public class JobService {
         response.setCategory(job.getCategory());
         response.setCompany(job.getCompany());
         response.setLocation(job.getLocation());
+        response.setAddressDetail(job.getAddressDetail());
         response.setDescription(job.getDescription());
         response.setStatus(job.getStatus().name());
         response.setPostedDate(job.getPostedDate());

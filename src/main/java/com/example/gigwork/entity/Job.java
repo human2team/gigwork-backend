@@ -29,6 +29,9 @@ public class Job {
     
     private String location;
     
+    @Column(name = "address_detail")
+    private String addressDetail;
+    
     private String salary;
     
     @Column(columnDefinition = "TEXT")
@@ -147,6 +150,14 @@ public class Job {
     
     public void setLocation(String location) {
         this.location = location;
+    }
+    
+    public String getAddressDetail() {
+        return addressDetail;
+    }
+    
+    public void setAddressDetail(String addressDetail) {
+        this.addressDetail = addressDetail;
     }
     
     public String getSalary() {
