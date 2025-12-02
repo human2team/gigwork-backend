@@ -2,6 +2,8 @@ package com.example.gigwork.security.jwt;
 
 import java.io.IOException;
 import java.util.Collections;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -20,6 +22,7 @@ import jakarta.servlet.http.HttpServletResponse;
 
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
+    private static final Logger logger = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
     
     private final JwtTokenProvider jwtTokenProvider;
     private final UserRepository userRepository;
@@ -38,11 +41,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         
         try {
             // 1. Header에서 JWT 토큰 추출
+            logger.info("JwtAuthenticationFilter: processing request {} {}", request.getMethod(), request.getRequestURI());
             String token = resolveToken(request);
+            logger.info("JwtAuthenticationFilter: resolved token: {}", token == null ? "<none>" : (token.length() <= 8 ? token : token.substring(0,8) + "..."));
             
-            // 2. 토큰 검증 (임시로 validation 체크 주석처리)
-            // if (token != null && jwtTokenProvider.validateToken(token)) {
-            if (token != null) {
+            // 2. 토큰 검증
+            if (token != null && jwtTokenProvider.validateToken(token)) {
+                logger.info("JwtAuthenticationFilter: token validated, extracting email");
                 // 3. 토큰에서 이메일 추출
                 String email = jwtTokenProvider.getEmailFromToken(token);
                 
@@ -50,6 +55,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 User user = userRepository.findByEmail(email).orElse(null);
                 
                 if (user != null) {
+                    logger.info("JwtAuthenticationFilter: user found: {}", email);
                     // 5. Authentication 객체 생성
                     UsernamePasswordAuthenticationToken authentication = 
                         new UsernamePasswordAuthenticationToken(
@@ -64,7 +70,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     
                     // 6. SecurityContext에 Authentication 저장
                     SecurityContextHolder.getContext().setAuthentication(authentication);
+                } else {
+                    logger.info("JwtAuthenticationFilter: no user found for email {}", email);
                 }
+            } else {
+                logger.info("JwtAuthenticationFilter: no valid token present or validation failed");
             }
         } catch (Exception e) {
             logger.error("JWT 인증 처리 중 오류 발생", e);

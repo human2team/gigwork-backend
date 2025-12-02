@@ -4,6 +4,8 @@ import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import jakarta.annotation.PostConstruct;
 import javax.crypto.SecretKey;
@@ -11,6 +13,7 @@ import java.util.Date;
 
 @Component
 public class JwtTokenProvider {
+    private static final Logger logger = LoggerFactory.getLogger(JwtTokenProvider.class);
     
     @Value("${jwt.secret}")
     private String secretKey;
@@ -88,17 +91,42 @@ public class JwtTokenProvider {
     /**
      * 토큰 검증
      */
-    // public boolean validateToken(String token) {
-    //     try {
-    //         Jwts.parser()
-    //             .verifyWith(key)
-    //             .build()
-    //             .parseSignedClaims(token);
-    //         return true;
-    //     } catch (JwtException | IllegalArgumentException e) {
-    //         return false;
-    //     }
-    // }
+    public boolean validateToken(String token) {
+        String masked = token == null ? "null" : (token.length() <= 8 ? token : token.substring(0, 8) + "...");
+        try {
+            logger.info("validateToken: checking token {}", masked);
+            Jwts.parser()
+                .verifyWith(key)
+                .build()
+                .parseSignedClaims(token);
+            logger.info("validateToken: token {} is valid", masked);
+            return true;
+        } catch (JwtException | IllegalArgumentException e) {
+            logger.warn("validateToken: token {} is invalid: {}", masked, e.getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * 토큰 만료일자 반환
+     */
+    public Date getExpirationDate(String token) {
+        String masked = token == null ? "null" : (token.length() <= 8 ? token : token.substring(0, 8) + "...");
+        try {
+            logger.info("getExpirationDate: parsing expiration for token {}", masked);
+            Date exp = Jwts.parser()
+                .verifyWith(key)
+                .build()
+                .parseSignedClaims(token)
+                .getPayload()
+                .getExpiration();
+            logger.info("getExpirationDate: token {} expires at {}", masked, exp);
+            return exp;
+        } catch (JwtException | IllegalArgumentException e) {
+            logger.warn("getExpirationDate: failed to parse expiration for token {}: {}", masked, e.getMessage());
+            return null;
+        }
+    }
     
     /**
      * 토큰 만료 확인

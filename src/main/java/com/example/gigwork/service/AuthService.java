@@ -2,6 +2,10 @@ package com.example.gigwork.service;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.Date;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -26,6 +30,7 @@ import com.example.gigwork.security.jwt.JwtTokenProvider;
 
 @Service
 public class AuthService {
+    private static final Logger logger = LoggerFactory.getLogger(AuthService.class);
     
     @Autowired
     private UserRepository userRepository;
@@ -157,9 +162,14 @@ public class AuthService {
         RefreshToken refreshTokenEntity = new RefreshToken();
         refreshTokenEntity.setToken(refreshToken);
         refreshTokenEntity.setUser(user);
-        refreshTokenEntity.setExpiryDate(
-            LocalDateTime.now().plusDays(7)
-        );
+        // DB에 저장하는 만료일은 JWT의 exp 클레임을 사용하여 일관되게 설정
+        Date refreshExp = jwtTokenProvider.getExpirationDate(refreshToken);
+        if (refreshExp != null) {
+            refreshTokenEntity.setExpiryDate(LocalDateTime.ofInstant(refreshExp.toInstant(), ZoneId.systemDefault()));
+        } else {
+            // fallback: 7일
+            refreshTokenEntity.setExpiryDate(LocalDateTime.now().plusDays(7));
+        }
         refreshTokenRepository.save(refreshTokenEntity);
         
         // 5. 응답 생성
@@ -180,10 +190,12 @@ public class AuthService {
      */
     @Transactional
     public TokenRefreshResponse refreshToken(String refreshToken) {
-        // 1. Refresh Token 검증 (임시로 주석 처리)
-        // if (!jwtTokenProvider.validateToken(refreshToken)) {
-        //     throw new RuntimeException("유효하지 않은 Refresh Token입니다");
-        // }
+        logger.info("AuthService.refreshToken: called with refreshToken {}", refreshToken == null ? "<null>" : (refreshToken.length() <= 8 ? refreshToken : refreshToken.substring(0,8) + "..."));
+        // 1. Refresh Token 검증 (서명/만료 확인)
+        if (!jwtTokenProvider.validateToken(refreshToken)) {
+            logger.warn("AuthService.refreshToken: refresh token validation failed");
+            throw new RuntimeException("유효하지 않은 Refresh Token입니다");
+        }
         
         // 2. DB에서 Refresh Token 조회
         RefreshToken storedToken = refreshTokenRepository
@@ -191,7 +203,9 @@ public class AuthService {
                 .orElseThrow(() -> new RuntimeException("Refresh Token을 찾을 수 없습니다"));
         
         // 3. 만료 확인
+        logger.info("AuthService.refreshToken: stored token expiryDate={}", storedToken.getExpiryDate());
         if (storedToken.isExpired()) {
+            logger.info("AuthService.refreshToken: stored refresh token is expired, deleting");
             refreshTokenRepository.delete(storedToken);
             throw new RuntimeException("Refresh Token이 만료되었습니다");
         }
@@ -205,8 +219,14 @@ public class AuthService {
         
         // 5. 새 Refresh Token 생성 (선택적 - 보안 강화)
         String newRefreshToken = jwtTokenProvider.createRefreshToken(user.getEmail());
+        logger.info("AuthService.refreshToken: issued new refresh token {}", newRefreshToken == null ? "<null>" : (newRefreshToken.length() <= 8 ? newRefreshToken : newRefreshToken.substring(0,8) + "..."));
         storedToken.setToken(newRefreshToken);
-        storedToken.setExpiryDate(LocalDateTime.now().plusDays(7));
+        Date newRefreshExp = jwtTokenProvider.getExpirationDate(newRefreshToken);
+        if (newRefreshExp != null) {
+            storedToken.setExpiryDate(LocalDateTime.ofInstant(newRefreshExp.toInstant(), ZoneId.systemDefault()));
+        } else {
+            storedToken.setExpiryDate(LocalDateTime.now().plusDays(7));
+        }
         refreshTokenRepository.save(storedToken);
         
         return new TokenRefreshResponse(

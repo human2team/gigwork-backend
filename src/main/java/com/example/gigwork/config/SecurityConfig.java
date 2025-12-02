@@ -18,6 +18,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import com.example.gigwork.security.jwt.JwtAuthenticationEntryPoint;
 import com.example.gigwork.security.jwt.JwtAuthenticationFilter;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
 @EnableWebSecurity
@@ -67,10 +68,13 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .exceptionHandling(exception -> exception.authenticationEntryPoint(jwtAuthenticationEntryPoint))
-            // 모든 요청 인증 없이 허용
-            .authorizeHttpRequests(auth -> auth.anyRequest().permitAll());
-        // JWT 필터 제거 (필요시)
-        // .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+            // 인증 정책: 인증 없이 허용할 경로를 명시하고 나머지는 인증 필요
+            .authorizeHttpRequests(auth -> auth
+                .requestMatchers("/api/auth/**", "/login", "/register", "/public/**", "/v3/api-docs/**", "/swagger-ui/**").permitAll()
+                .anyRequest().authenticated()
+            )
+            // JWT 인증 필터 등록
+            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
 }
