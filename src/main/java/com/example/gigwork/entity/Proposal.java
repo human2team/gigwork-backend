@@ -12,6 +12,14 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 
+/**
+ * 제안서 엔티티
+ * DB 테이블: proposal (기본값)
+ * 연관 테이블:
+ *   - jobs (N:1) - 공고 정보
+ *   - jobseeker_profiles (N:1) - 구직자 프로필 정보
+ *   - employer_profiles (N:1) - 사업자 프로필 정보
+ */
 @Entity
 public class Proposal {
     @Id

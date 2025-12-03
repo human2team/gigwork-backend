@@ -20,6 +20,15 @@ import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 
+/**
+ * 구직자 프로필 엔티티
+ * DB 테이블: jobseeker_profiles
+ * 연관 테이블:
+ *   - users (1:1) - 사용자 정보
+ *   - licenses (1:N) - 자격증 목록
+ *   - experiences (1:N) - 경력 목록
+ *   - applications (1:N) - 지원서 목록
+ */
 @Entity
 @Table(name = "jobseeker_profiles")
 public class JobseekerProfile {

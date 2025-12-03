@@ -4,6 +4,13 @@ import jakarta.persistence.*;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * 사업자 프로필 엔티티
+ * DB 테이블: employer_profiles
+ * 연관 테이블:
+ *   - users (1:1) - 사용자 정보
+ *   - jobs (1:N) - 일자리 공고 목록
+ */
 @Entity
 @Table(name = "employer_profiles")
 public class EmployerProfile {

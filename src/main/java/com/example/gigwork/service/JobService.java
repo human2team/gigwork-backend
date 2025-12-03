@@ -10,6 +10,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
@@ -58,11 +61,15 @@ public class JobService {
                     headers.setContentType(MediaType.APPLICATION_JSON);
                     HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
                     log.info("[afterCommit] FastAPI /update/ 호출: job_id={}", jobId);
-                    Map<String, Object> fastApiResponse = restTemplate.postForObject(
+                    // Use ParameterizedTypeReference to avoid unchecked conversion warnings
+                    ParameterizedTypeReference<Map<String, Object>> typeRef = new ParameterizedTypeReference<>() {};
+                    ResponseEntity<Map<String, Object>> resp = restTemplate.exchange(
                         FASTAPI_UPDATE_URL,
+                        HttpMethod.POST,
                         entity,
-                        Map.class
+                        typeRef
                     );
+                    Map<String, Object> fastApiResponse = resp.getBody();
                     log.info("[afterCommit] 📥 FastAPI 응답 전체: {}", fastApiResponse);
                 } catch (RestClientException e) {
                     log.error("[afterCommit] ❌ FastAPI 호출 실패: {}", e.getMessage(), e);
@@ -134,10 +141,22 @@ public class JobService {
     /**
      * 일자리 공고 상세 조회 (조회수 증가 없음 - 사업자용)
      */
-    @Transactional(readOnly = true)
+    @Transactional
     public JobDetailResponse getJobWithoutIncrement(Long jobId) {
         Job job = jobRepository.findById(jobId)
                 .orElseThrow(() -> new RuntimeException("일자리 공고를 찾을 수 없습니다."));
+        
+        // 마감일이 지난 ACTIVE 공고를 자동으로 CLOSED로 변경
+        if (job.getStatus() == JobStatus.ACTIVE && job.getDeadline() != null) {
+            java.time.LocalDate today = java.time.LocalDate.now();
+            if (job.getDeadline().isBefore(today)) {
+                job.setStatus(JobStatus.CLOSED);
+                jobRepository.save(job);
+                log.info("[getJobWithoutIncrement] 마감일 지난 공고 자동 마감: ID={}, 제목={}, 마감일={}", 
+                        job.getId(), job.getTitle(), job.getDeadline());
+            }
+        }
+        
         return convertToDetailResponse(job);
     }
     
@@ -148,6 +167,17 @@ public class JobService {
     public JobDetailResponse getJob(Long jobId, jakarta.servlet.http.HttpSession session) {
         Job job = jobRepository.findById(jobId)
                 .orElseThrow(() -> new RuntimeException("일자리 공고를 찾을 수 없습니다."));
+        
+        // 마감일이 지난 ACTIVE 공고를 자동으로 CLOSED로 변경
+        if (job.getStatus() == JobStatus.ACTIVE && job.getDeadline() != null) {
+            java.time.LocalDate today = java.time.LocalDate.now();
+            if (job.getDeadline().isBefore(today)) {
+                job.setStatus(JobStatus.CLOSED);
+                jobRepository.save(job);
+                log.info("[getJob] 마감일 지난 공고 자동 마감: ID={}, 제목={}, 마감일={}", 
+                        job.getId(), job.getTitle(), job.getDeadline());
+            }
+        }
         
         // 세션에서 조회한 공고 목록 가져오기
         @SuppressWarnings("unchecked")
@@ -178,10 +208,29 @@ public class JobService {
     /**
      * 사업자의 일자리 공고 목록 조회
      */
-    @Transactional(readOnly = true)
+    @Transactional
     public List<JobDetailResponse> getEmployerJobs(Long employerId) {
         // employerId는 User의 ID이므로 findByEmployerUserId 사용
         List<Job> jobs = jobRepository.findByEmployerUserId(employerId);
+        
+        // 마감일이 지난 ACTIVE 공고를 자동으로 CLOSED로 변경
+        java.time.LocalDate today = java.time.LocalDate.now();
+        boolean hasChanges = false;
+        for (Job job : jobs) {
+            if (job.getStatus() == JobStatus.ACTIVE && job.getDeadline() != null) {
+                if (job.getDeadline().isBefore(today)) {
+                    job.setStatus(JobStatus.CLOSED);
+                    jobRepository.save(job);
+                    hasChanges = true;
+                    log.info("[getEmployerJobs] 마감일 지난 공고 자동 마감: ID={}, 제목={}, 마감일={}", 
+                            job.getId(), job.getTitle(), job.getDeadline());
+                }
+            }
+        }
+        if (hasChanges) {
+            jobRepository.flush();
+        }
+        
         return jobs.stream()
                 .map(this::convertToDetailResponse)
                 .toList();
@@ -275,12 +324,56 @@ public class JobService {
     /**
      * 모든 활성 공고 조회 (구직자용)
      */
-    @Transactional(readOnly = true)
+    @Transactional
     public List<JobDetailResponse> getActiveJobs() {
         List<Job> jobs = jobRepository.findByStatus(JobStatus.ACTIVE);
+        
+        // 마감일이 지난 ACTIVE 공고를 자동으로 CLOSED로 변경
+        java.time.LocalDate today = java.time.LocalDate.now();
+        boolean hasChanges = false;
+        for (Job job : jobs) {
+            if (job.getDeadline() != null && job.getDeadline().isBefore(today)) {
+                job.setStatus(JobStatus.CLOSED);
+                jobRepository.save(job);
+                hasChanges = true;
+                log.info("[getActiveJobs] 마감일 지난 공고 자동 마감: ID={}, 제목={}, 마감일={}", 
+                        job.getId(), job.getTitle(), job.getDeadline());
+            }
+        }
+        if (hasChanges) {
+            jobRepository.flush();
+        }
+        
+        // CLOSED로 변경된 공고를 제외하고 반환
         return jobs.stream()
+                .filter(job -> job.getStatus() == JobStatus.ACTIVE)
                 .map(this::convertToDetailResponse)
                 .toList();
+    }
+
+    /**
+     * 마감일이 지난 ACTIVE 공고를 CLOSED로 변경한다.
+     * 관리용으로 스케줄러나 수동 트리거에서 호출할 수 있다.
+     * @return 변경된 공고 수
+     */
+    @Transactional
+    public int closeExpiredJobs() {
+        List<Job> activeJobs = jobRepository.findByStatus(JobStatus.ACTIVE);
+        java.time.LocalDate today = java.time.LocalDate.now();
+        int closedCount = 0;
+
+        for (Job job : activeJobs) {
+            java.time.LocalDate deadline = job.getDeadline();
+            if (deadline != null && deadline.isBefore(today)) {
+                job.setStatus(JobStatus.CLOSED);
+                jobRepository.save(job);
+                closedCount++;
+                log.info("[closeExpiredJobs] 공고 마감 처리: ID={}, 제목={}, 마감일={}", job.getId(), job.getTitle(), deadline);
+            }
+        }
+        jobRepository.flush();
+        log.info("[closeExpiredJobs] 완료: 총 {}건 마감 처리", closedCount);
+        return closedCount;
     }
     
     /**

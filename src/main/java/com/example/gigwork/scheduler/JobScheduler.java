@@ -25,37 +25,25 @@ public class JobScheduler {
     
     @Autowired
     private JobRepository jobRepository;
+
+    @Autowired
+    private com.example.gigwork.service.JobService jobService;
     
     /**
      * 매일 자정(00:00:00)에 실행
      * 마감일이 지난 ACTIVE 공고를 CLOSED로 변경
      */
-    @Scheduled(cron = "0 0 0 * * *")
+    // 매시간 정각에 실행하여 운영 중 즉시 마감 반영 (운영에서는 하루에 한 번으로 변경 가능)
+    @Scheduled(cron = "0 0 * * * *")
     @Transactional
     public void closeExpiredJobs() {
-        logger.info("마감일 지난 공고 자동 마감 작업 시작");
-        
-        LocalDate today = LocalDate.now();
-        
-        // ACTIVE 상태인 모든 공고 조회
-        List<Job> activeJobs = jobRepository.findByStatus(JobStatus.ACTIVE);
-        
-        int closedCount = 0;
-        
-        for (Job job : activeJobs) {
-            LocalDate deadline = job.getDeadline();
-            
-            // 마감일이 설정되어 있고, 오늘 날짜보다 이전인 경우
-            if (deadline != null && deadline.isBefore(today)) {
-                job.setStatus(JobStatus.CLOSED);
-                jobRepository.save(job);
-                closedCount++;
-                
-                logger.info("공고 마감 처리: ID={}, 제목={}, 마감일={}", 
-                    job.getId(), job.getTitle(), deadline);
-            }
+        logger.info("마감일 지난 공고 자동 마감 작업 시작 (스케줄러)");
+        int closed = 0;
+        try {
+            closed = jobService.closeExpiredJobs();
+        } catch (Exception e) {
+            logger.error("마감 자동 처리 중 오류 발생", e);
         }
-        
-        logger.info("마감일 지난 공고 자동 마감 작업 완료: 총 {}건 마감 처리", closedCount);
+        logger.info("마감일 지난 공고 자동 마감 작업 완료: 총 {}건 마감 처리", closed);
     }
 }

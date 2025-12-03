@@ -3,6 +3,12 @@ package com.example.gigwork.entity;
 import jakarta.persistence.*;
 import java.time.LocalDate;
 
+/**
+ * 자격증 엔티티
+ * DB 테이블: licenses
+ * 연관 테이블:
+ *   - jobseeker_profiles (N:1) - 구직자 프로필 정보
+ */
 @Entity
 @Table(name = "licenses")
 public class License {

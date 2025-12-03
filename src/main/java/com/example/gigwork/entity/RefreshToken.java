@@ -3,6 +3,12 @@ package com.example.gigwork.entity;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
+/**
+ * 리프레시 토큰 엔티티
+ * DB 테이블: refresh_tokens
+ * 연관 테이블:
+ *   - users (N:1) - 사용자 정보
+ */
 @Entity
 @Table(name = "refresh_tokens")
 public class RefreshToken {

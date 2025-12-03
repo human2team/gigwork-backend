@@ -5,6 +5,11 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
+/**
+ * 업직종 카테고리 엔티티
+ * DB 테이블: category
+ * 연관 테이블: 없음 (독립 테이블)
+ */
 @Entity
 @Table(name = "category")
 public class Category {

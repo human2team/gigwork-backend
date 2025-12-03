@@ -13,6 +13,13 @@ import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 
+/**
+ * 저장된 일자리 엔티티
+ * DB 테이블: saved_jobs
+ * 연관 테이블:
+ *   - jobseeker_profiles (N:1) - 구직자 프로필 정보
+ *   - jobs (N:1) - 공고 정보
+ */
 @Entity
 @Table(name = "saved_jobs", uniqueConstraints = {
     @UniqueConstraint(columnNames = {"jobseeker_id", "job_id"})

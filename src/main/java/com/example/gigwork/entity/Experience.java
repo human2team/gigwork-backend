@@ -2,6 +2,12 @@ package com.example.gigwork.entity;
 
 import jakarta.persistence.*;
 
+/**
+ * 경력 엔티티
+ * DB 테이블: experiences
+ * 연관 테이블:
+ *   - jobseeker_profiles (N:1) - 구직자 프로필 정보
+ */
 @Entity
 @Table(name = "experiences")
 public class Experience {

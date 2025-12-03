@@ -4,6 +4,13 @@ import com.example.gigwork.enums.ApplicationStatus;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
+/**
+ * 지원서 엔티티
+ * DB 테이블: applications
+ * 연관 테이블:
+ *   - jobs (N:1) - 공고 정보
+ *   - jobseeker_profiles (N:1) - 구직자 프로필 정보
+ */
 @Entity
 @Table(name = "applications")
 public class Application {

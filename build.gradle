@@ -36,6 +36,12 @@ dependencies {
    compileOnly 'org.projectlombok:lombok'
    annotationProcessor 'org.projectlombok:lombok'
    
+   // Mail
+   implementation 'org.springframework.boot:spring-boot-starter-mail'
+   
+   // Dotenv for .env file support
+   implementation 'io.github.cdimascio:dotenv-java:3.0.0'
+   
    testImplementation 'org.springframework.boot:spring-boot-starter-test'
    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 

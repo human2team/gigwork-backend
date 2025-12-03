@@ -9,6 +9,13 @@ import com.example.gigwork.enums.JobStatus;
 
 import jakarta.persistence.*;
 
+/**
+ * 일자리 공고 엔티티
+ * DB 테이블: jobs
+ * 연관 테이블:
+ *   - employer_profiles (N:1) - 사업자 프로필 정보
+ *   - applications (1:N) - 지원서 목록
+ */
 @Entity
 @Table(name = "jobs")
 public class Job {

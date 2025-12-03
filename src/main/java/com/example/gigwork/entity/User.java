@@ -4,6 +4,14 @@ import com.example.gigwork.enums.UserType;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
+/**
+ * 사용자 엔티티
+ * DB 테이블: users
+ * 연관 테이블:
+ *   - jobseeker_profiles (1:1) - 구직자 프로필 정보
+ *   - employer_profiles (1:1) - 사업자 프로필 정보
+ *   - refresh_tokens (1:N) - 리프레시 토큰 목록
+ */
 @Entity
 @Table(name = "users")
 public class User {
