@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 
 import jakarta.annotation.PostConstruct;
 import javax.crypto.SecretKey;
+import java.time.LocalDateTime;
 import java.util.Date;
 
 @Component
@@ -62,6 +63,20 @@ public class JwtTokenProvider {
                 .expiration(validity)
                 .signWith(key, Jwts.SIG.HS256)
                 .compact();
+    }
+    
+    /**
+     * Refresh Token 검증
+     */
+    public boolean validateRefreshToken(String token) {
+        return validateToken(token);
+    }
+    
+    /**
+     * Refresh Token 만료일 계산
+     */
+    public LocalDateTime getRefreshTokenExpiry() {
+        return LocalDateTime.now().plusSeconds(refreshTokenValidity / 1000);
     }
     
     /**

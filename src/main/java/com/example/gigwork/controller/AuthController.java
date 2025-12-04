@@ -7,9 +7,13 @@ import com.example.gigwork.dto.LoginRequest;
 import com.example.gigwork.dto.TokenRefreshRequest;
 import com.example.gigwork.dto.TokenRefreshResponse;
 import com.example.gigwork.service.AuthService;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.ResponseCookie;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -56,10 +60,33 @@ public class AuthController {
      * POST /api/auth/login
      */
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody LoginRequest request) {
+    public ResponseEntity<?> login(@RequestBody LoginRequest request, HttpServletResponse response) {
         try {
-            AuthResponse response = authService.login(request);
-            return ResponseEntity.ok(response);
+            AuthResponse authResponse = authService.login(request);
+            
+            // Access Token Cookie 설정 (1시간)
+            Cookie accessCookie = new Cookie("accessToken", authResponse.getAccessToken());
+            accessCookie.setHttpOnly(true);
+            accessCookie.setSecure(true);
+            accessCookie.setPath("/");
+            accessCookie.setMaxAge(60 * 60); // 1시간
+            // accessCookie.setSameSite("Strict"); // Spring Boot 3.x에서는 setAttribute 사용
+            response.addCookie(accessCookie);
+            
+            // Refresh Token Cookie 설정 (7일)
+            Cookie refreshCookie = new Cookie("refreshToken", authResponse.getRefreshToken());
+            refreshCookie.setHttpOnly(true);
+            refreshCookie.setSecure(true);
+            refreshCookie.setPath("/");
+            refreshCookie.setMaxAge(7 * 24 * 60 * 60); // 7일
+            // refreshCookie.setSameSite("Strict");
+            response.addCookie(refreshCookie);
+            
+            // Response Body에서는 토큰 제거
+            authResponse.setAccessToken(null);
+            authResponse.setRefreshToken(null);
+            
+            return ResponseEntity.ok(authResponse);
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(new ErrorResponse(e.getMessage()));
@@ -71,10 +98,47 @@ public class AuthController {
      * POST /api/auth/refresh
      */
     @PostMapping("/refresh")
-    public ResponseEntity<?> refreshToken(@RequestBody TokenRefreshRequest request) {
+    public ResponseEntity<?> refreshToken(HttpServletRequest request, HttpServletResponse response) {
         try {
-            TokenRefreshResponse response = authService.refreshToken(request.getRefreshToken());
-            return ResponseEntity.ok(response);
+            // Cookie에서 Refresh Token 추출
+            String refreshToken = null;
+            if (request.getCookies() != null) {
+                for (Cookie cookie : request.getCookies()) {
+                    if ("refreshToken".equals(cookie.getName())) {
+                        refreshToken = cookie.getValue();
+                        break;
+                    }
+                }
+            }
+            
+            if (refreshToken == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(new ErrorResponse("Refresh Token이 없습니다"));
+            }
+            
+            TokenRefreshResponse tokenResponse = authService.refreshToken(refreshToken);
+            
+            // 새 Access Token Cookie 설정
+            Cookie accessCookie = new Cookie("accessToken", tokenResponse.getAccessToken());
+            accessCookie.setHttpOnly(true);
+            accessCookie.setSecure(true);
+            accessCookie.setPath("/");
+            accessCookie.setMaxAge(60 * 60); // 1시간
+            response.addCookie(accessCookie);
+            
+            // 새 Refresh Token Cookie 설정
+            Cookie refreshCookie = new Cookie("refreshToken", tokenResponse.getRefreshToken());
+            refreshCookie.setHttpOnly(true);
+            refreshCookie.setSecure(true);
+            refreshCookie.setPath("/");
+            refreshCookie.setMaxAge(7 * 24 * 60 * 60); // 7일
+            response.addCookie(refreshCookie);
+            
+            // Response Body에서는 토큰 제거
+            tokenResponse.setAccessToken(null);
+            tokenResponse.setRefreshToken(null);
+            
+            return ResponseEntity.ok(tokenResponse);
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(new ErrorResponse(e.getMessage()));
@@ -86,9 +150,40 @@ public class AuthController {
      * POST /api/auth/logout
      */
     @PostMapping("/logout")
-    public ResponseEntity<?> logout(@RequestBody TokenRefreshRequest request) {
+    public ResponseEntity<?> logout(HttpServletRequest request, HttpServletResponse response) {
         try {
-            authService.logout(request.getRefreshToken());
+            // Cookie에서 사용자 이메일 추출 (accessToken에서)
+            String accessToken = null;
+            if (request.getCookies() != null) {
+                for (Cookie cookie : request.getCookies()) {
+                    if ("accessToken".equals(cookie.getName())) {
+                        accessToken = cookie.getValue();
+                        break;
+                    }
+                }
+            }
+            
+            if (accessToken != null) {
+                // JwtTokenProvider를 통해 email 추출 (AuthService에서 처리)
+                authService.logout(accessToken);
+            }
+            
+            // Access Token Cookie 삭제
+            Cookie accessCookie = new Cookie("accessToken", null);
+            accessCookie.setHttpOnly(true);
+            accessCookie.setSecure(true);
+            accessCookie.setPath("/");
+            accessCookie.setMaxAge(0);
+            response.addCookie(accessCookie);
+            
+            // Refresh Token Cookie 삭제
+            Cookie refreshCookie = new Cookie("refreshToken", null);
+            refreshCookie.setHttpOnly(true);
+            refreshCookie.setSecure(true);
+            refreshCookie.setPath("/api/auth");
+            refreshCookie.setMaxAge(0);
+            response.addCookie(refreshCookie);
+            
             return ResponseEntity.ok(new SuccessResponse("로그아웃이 완료되었습니다."));
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)

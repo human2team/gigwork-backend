@@ -32,6 +32,9 @@ import com.example.gigwork.security.jwt.JwtTokenProvider;
 public class AuthService {
     private static final Logger logger = LoggerFactory.getLogger(AuthService.class);
     
+    // 사용자별 refresh lock을 위한 동기화 객체 (메모리 최적화)
+    private final java.util.concurrent.ConcurrentHashMap<String, Object> refreshLocks = new java.util.concurrent.ConcurrentHashMap<>();
+    
     @Autowired
     private UserRepository userRepository;
     
@@ -156,21 +159,10 @@ public class AuthService {
         );
         String refreshToken = jwtTokenProvider.createRefreshToken(user.getEmail());
         
-        // 4. Refresh Token DB에 저장 (기존 토큰 삭제 후 저장)
-        refreshTokenRepository.deleteByUser(user);
-        
-        RefreshToken refreshTokenEntity = new RefreshToken();
-        refreshTokenEntity.setToken(refreshToken);
-        refreshTokenEntity.setUser(user);
-        // DB에 저장하는 만료일은 JWT의 exp 클레임을 사용하여 일관되게 설정
-        Date refreshExp = jwtTokenProvider.getExpirationDate(refreshToken);
-        if (refreshExp != null) {
-            refreshTokenEntity.setExpiryDate(LocalDateTime.ofInstant(refreshExp.toInstant(), ZoneId.systemDefault()));
-        } else {
-            // fallback: 7일
-            refreshTokenEntity.setExpiryDate(LocalDateTime.now().plusDays(7));
-        }
-        refreshTokenRepository.save(refreshTokenEntity);
+        // 4. Refresh Token을 User 엔티티에 저장
+        user.setRefreshToken(refreshToken);
+        user.setRefreshTokenExpiry(jwtTokenProvider.getRefreshTokenExpiry());
+        userRepository.save(user);
         
         // 5. 응답 생성
         AuthResponse response = new AuthResponse(
@@ -191,57 +183,87 @@ public class AuthService {
     @Transactional
     public TokenRefreshResponse refreshToken(String refreshToken) {
         logger.info("AuthService.refreshToken: called with refreshToken {}", refreshToken == null ? "<null>" : (refreshToken.length() <= 8 ? refreshToken : refreshToken.substring(0,8) + "..."));
+        
         // 1. Refresh Token 검증 (서명/만료 확인)
-        if (!jwtTokenProvider.validateToken(refreshToken)) {
+        logger.info("AuthService.refreshToken: validating token...");
+        if (!jwtTokenProvider.validateRefreshToken(refreshToken)) {
             logger.warn("AuthService.refreshToken: refresh token validation failed");
             throw new RuntimeException("유효하지 않은 Refresh Token입니다");
         }
+        logger.info("AuthService.refreshToken: token validation passed");
         
-        // 2. DB에서 Refresh Token 조회
-        RefreshToken storedToken = refreshTokenRepository
-                .findByToken(refreshToken)
-                .orElseThrow(() -> new RuntimeException("Refresh Token을 찾을 수 없습니다"));
+        // 2. Token에서 email 추출
+        String email = jwtTokenProvider.getEmailFromToken(refreshToken);
+        logger.info("AuthService.refreshToken: extracted email: {}", email);
         
-        // 3. 만료 확인
-        logger.info("AuthService.refreshToken: stored token expiryDate={}", storedToken.getExpiryDate());
-        if (storedToken.isExpired()) {
-            logger.info("AuthService.refreshToken: stored refresh token is expired, deleting");
-            refreshTokenRepository.delete(storedToken);
-            throw new RuntimeException("Refresh Token이 만료되었습니다");
+        // 사용자별 동기화 - 동일 사용자의 동시 refresh 방지
+        Object lock = refreshLocks.computeIfAbsent(email, k -> new Object());
+        
+        synchronized (lock) {
+            logger.info("AuthService.refreshToken: acquired lock for user {}", email);
+            
+            // 3. DB에서 사용자 조회 및 Refresh Token 확인
+            User user = userRepository.findByEmail(email)
+                    .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다"));
+            
+            logger.info("AuthService.refreshToken: user found, DB token: {}", 
+                user.getRefreshToken() == null ? "<null>" : (user.getRefreshToken().length() <= 8 ? user.getRefreshToken() : user.getRefreshToken().substring(0,8) + "..."));
+            
+            // 4. DB에 저장된 refresh token과 비교
+            if (!refreshToken.equals(user.getRefreshToken())) {
+                logger.warn("AuthService.refreshToken: token mismatch - received vs DB (another thread may have refreshed)");
+                throw new RuntimeException("유효하지 않은 Refresh Token입니다");
+            }
+            logger.info("AuthService.refreshToken: token match confirmed");
+            
+            // 5. 만료 확인 (isAfter를 사용하여 명확하게 체크)
+            LocalDateTime now = LocalDateTime.now();
+            if (user.getRefreshTokenExpiry() == null || !user.getRefreshTokenExpiry().isAfter(now)) {
+                logger.info("AuthService.refreshToken: refresh token expired - expiry: {}, now: {}", 
+                    user.getRefreshTokenExpiry(), now);
+                user.setRefreshToken(null);
+                user.setRefreshTokenExpiry(null);
+                userRepository.save(user);
+                throw new RuntimeException("Refresh Token이 만료되었습니다");
+            }
+            
+            // 6. 새 Access Token 생성
+            String newAccessToken = jwtTokenProvider.createAccessToken(
+                user.getEmail(),
+                user.getUserType().name()
+            );
+            
+            // 7. 새 Refresh Token 생성 (Rotation 보안 강화)
+            String newRefreshToken = jwtTokenProvider.createRefreshToken(user.getEmail());
+            user.setRefreshToken(newRefreshToken);
+            user.setRefreshTokenExpiry(jwtTokenProvider.getRefreshTokenExpiry());
+            userRepository.save(user);
+            
+            logger.info("AuthService.refreshToken: issued new tokens successfully");
+            
+            return new TokenRefreshResponse(
+                newAccessToken,
+                newRefreshToken,
+                "토큰이 갱신되었습니다."
+            );
         }
-        
-        // 4. 새 Access Token 생성
-        User user = storedToken.getUser();
-        String newAccessToken = jwtTokenProvider.createAccessToken(
-            user.getEmail(),
-            user.getUserType().name()
-        );
-        
-        // 5. 새 Refresh Token 생성 (선택적 - 보안 강화)
-        String newRefreshToken = jwtTokenProvider.createRefreshToken(user.getEmail());
-        logger.info("AuthService.refreshToken: issued new refresh token {}", newRefreshToken == null ? "<null>" : (newRefreshToken.length() <= 8 ? newRefreshToken : newRefreshToken.substring(0,8) + "..."));
-        storedToken.setToken(newRefreshToken);
-        Date newRefreshExp = jwtTokenProvider.getExpirationDate(newRefreshToken);
-        if (newRefreshExp != null) {
-            storedToken.setExpiryDate(LocalDateTime.ofInstant(newRefreshExp.toInstant(), ZoneId.systemDefault()));
-        } else {
-            storedToken.setExpiryDate(LocalDateTime.now().plusDays(7));
-        }
-        refreshTokenRepository.save(storedToken);
-        
-        return new TokenRefreshResponse(
-            newAccessToken,
-            newRefreshToken,
-            "토큰이 갱신되었습니다."
-        );
     }
     
     /**
      * 로그아웃
      */
     @Transactional
-    public void logout(String refreshToken) {
-        refreshTokenRepository.deleteByToken(refreshToken);
+    public void logout(String accessToken) {
+        // Access Token에서 email 추출
+        String email = jwtTokenProvider.getEmailFromToken(accessToken);
+        
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다"));
+        
+        // Refresh Token 무효화
+        user.setRefreshToken(null);
+        user.setRefreshTokenExpiry(null);
+        userRepository.save(user);
     }
     
     /**
@@ -283,10 +305,14 @@ public class AuthService {
             throw new RuntimeException("비밀번호가 일치하지 않습니다.");
         }
         
-        // 3. 연관 Refresh Token 선삭제 (FK 제약 위반 방지)
+        // 3. Refresh Token 무효화
+        user.setRefreshToken(null);
+        user.setRefreshTokenExpiry(null);
+        
+        // 4. 연관 Refresh Token 선삭제 (FK 제약 위반 방지)
         refreshTokenRepository.deleteByUser(user);
 
-        // 4. 사용자 삭제 (CASCADE로 프로필, 자격증, 경력, 공고 등 모두 삭제됨)
+        // 5. 사용자 삭제 (CASCADE로 프로필, 자격증, 경력, 공고 등 모두 삭제됨)
         userRepository.delete(user);
     }
 }

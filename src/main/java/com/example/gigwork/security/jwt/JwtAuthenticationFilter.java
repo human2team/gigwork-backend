@@ -13,6 +13,7 @@ import com.example.gigwork.entity.User;
 import com.example.gigwork.repository.UserRepository;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 @Component
@@ -109,13 +110,26 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
     
     /**
-     * Header에서 토큰 추출
+     * Header 또는 Cookie에서 토큰 추출
      */
     private String resolveToken(HttpServletRequest request) {
+        // 1. Cookie에서 accessToken 추출 시도
+        if (request.getCookies() != null) {
+            for (Cookie cookie : request.getCookies()) {
+                if ("accessToken".equals(cookie.getName())) {
+                    logger.info("JwtAuthenticationFilter: found accessToken in Cookie");
+                    return cookie.getValue();
+                }
+            }
+        }
+        
+        // 2. Fallback: Authorization Header에서 추출 (하위 호환성)
         String bearerToken = request.getHeader("Authorization");
         if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
+            logger.info("JwtAuthenticationFilter: found token in Authorization header");
             return bearerToken.substring(7);
         }
+        
         return null;
     }
 }
