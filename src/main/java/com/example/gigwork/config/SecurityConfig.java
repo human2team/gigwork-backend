@@ -1,7 +1,5 @@
 package com.example.gigwork.config;
-
 import java.util.Arrays;
-
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -15,11 +13,9 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-
 import com.example.gigwork.security.jwt.JwtAuthenticationEntryPoint;
 import com.example.gigwork.security.jwt.JwtAuthenticationFilter;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
@@ -49,7 +45,12 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         
-        configuration.setAllowedOriginPatterns(Arrays.asList("*"));
+        // allowCredentials(true) 사용 시 명시적인 도메인 지정 필요
+        configuration.setAllowedOrigins(Arrays.asList(
+            "http://localhost:5173",
+            "http://localhost:8080",
+            "https://gigwork.cloud"
+        ));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
         configuration.setAllowCredentials(true);
@@ -70,7 +71,10 @@ public class SecurityConfig {
             .exceptionHandling(exception -> exception.authenticationEntryPoint(jwtAuthenticationEntryPoint))
             // 인증 정책: 인증 없이 허용할 경로를 명시하고 나머지는 인증 필요
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/auth/**", "/login", "/register", "/public/**", "/v3/api-docs/**", "/swagger-ui/**").permitAll()
+                .requestMatchers("/", "/error", "/jobseeker", "/jobseeker/**", "/employer", "/employer/**", 
+                                 "/login", "/login/**", "/signup", "/signup/**", "/terms", "/privacy", 
+                                 "/register", "/api/auth/**", "/public/**", "/v3/api-docs/**", "/swagger-ui/**", 
+                                "/*.html", "/static/**", "/assets/**", "/css/**", "/js/**", "/images/**", "/*.svg", "/*.ico", "/favicon.ico").permitAll()
                 .anyRequest().authenticated()
             )
             // JWT 인증 필터 등록

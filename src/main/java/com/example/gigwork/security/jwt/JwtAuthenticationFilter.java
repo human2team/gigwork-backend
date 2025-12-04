@@ -1,25 +1,20 @@
 package com.example.gigwork.security.jwt;
-
 import java.io.IOException;
 import java.util.Collections;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
-
 import com.example.gigwork.entity.User;
 import com.example.gigwork.repository.UserRepository;
-
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private static final Logger logger = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
@@ -40,8 +35,38 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     ) throws ServletException, IOException {
         
         try {
+            String path = request.getRequestURI();
+            logger.info("JwtAuthenticationFilter: processing request {} {}", request.getMethod(), path);
+            
+            // permitAll 경로는 JWT 검증 skip
+            if (path.equals("/") || 
+                path.equals("/error") ||
+                path.startsWith("/jobseeker") ||
+                path.startsWith("/employer") ||
+                path.startsWith("/login") || 
+                path.startsWith("/signup") ||
+                path.startsWith("/terms") ||
+                path.startsWith("/privacy") ||
+                path.startsWith("/register") || 
+                path.startsWith("/api/auth/") || 
+                path.startsWith("/public/") ||
+                path.startsWith("/v3/api-docs") ||
+                path.startsWith("/swagger-ui") ||
+                path.endsWith(".html") ||
+                path.startsWith("/static/") ||
+                path.startsWith("/assets/") ||
+                path.startsWith("/css/") ||
+                path.startsWith("/js/") ||
+                path.startsWith("/images/") ||
+                path.endsWith(".svg") ||
+                path.endsWith(".ico") ||
+                path.equals("/favicon.ico")) {
+                logger.info("JwtAuthenticationFilter: permitAll path, skipping JWT validation");
+                filterChain.doFilter(request, response);
+                return;
+            }
+            
             // 1. Header에서 JWT 토큰 추출
-            logger.info("JwtAuthenticationFilter: processing request {} {}", request.getMethod(), request.getRequestURI());
             String token = resolveToken(request);
             logger.info("JwtAuthenticationFilter: resolved token: {}", token == null ? "<none>" : (token.length() <= 8 ? token : token.substring(0,8) + "..."));
             
