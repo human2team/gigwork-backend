@@ -1,1 +1,1 @@
-scp .\build\libs\gigwork-0.0.1-SNAPSHOT.jar root@gigwork.cloud:/app/gigworkjar/
+scp .\build\libs\gigwork_backend.jar root@albahero.com:/app/suwon/gigwork_backend/
